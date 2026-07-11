@@ -317,6 +317,13 @@
             color: var(--text-primary);
         }
 
+        .switcher-updated {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin: 0.1rem 0 0.6rem 0;
+            font-weight: 500;
+        }
+
         .switcher-meta {
             font-size: 0.75rem;
             color: var(--text-muted);
@@ -1004,6 +1011,7 @@
                     <span class="switcher-badge">Unified</span>
                 </div>
                 <div class="switcher-count" id="count-all">-</div>
+                <div class="switcher-updated" id="updated-all">Last update: -</div>
                 <div class="switcher-meta">
                     <span>Consolidated databases</span>
                 </div>
@@ -1016,6 +1024,7 @@
                     <span class="switcher-badge">ON</span>
                 </div>
                 <div class="switcher-count" id="count-on">-</div>
+                <div class="switcher-updated" id="updated-on">Last update: -</div>
                 <div class="switcher-meta">
                     <span>Registry database</span>
                     <a href="ontario/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
@@ -1029,6 +1038,7 @@
                     <span class="switcher-badge">BC</span>
                 </div>
                 <div class="switcher-count" id="count-bc">-</div>
+                <div class="switcher-updated" id="updated-bc">Last update: -</div>
                 <div class="switcher-meta">
                     <span>Registry database</span>
                     <a href="bc/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
@@ -1042,6 +1052,7 @@
                     <span class="switcher-badge">AB</span>
                 </div>
                 <div class="switcher-count" id="count-ab">-</div>
+                <div class="switcher-updated" id="updated-ab">Last update: -</div>
                 <div class="switcher-meta">
                     <span>Registry database</span>
                     <a href="alberta/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
@@ -1055,6 +1066,7 @@
                     <span class="switcher-badge">SK</span>
                 </div>
                 <div class="switcher-count" id="count-sk">-</div>
+                <div class="switcher-updated" id="updated-sk">Last update: -</div>
                 <div class="switcher-meta">
                     <span>Registry database</span>
                     <a href="saskatchewan/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
@@ -1375,6 +1387,25 @@
             });
         }
 
+        // Helper: Find the latest filing date and format as YYYY-MM-DD
+        function getLatestFilingDate(rows) {
+            if (!rows || rows.length === 0) return 'N/A';
+            let latestDate = null;
+            for (let i = 0; i < rows.length; i++) {
+                const parsed = parseFilingDate(rows[i].filingDate);
+                if (parsed) {
+                    if (!latestDate || parsed > latestDate) {
+                        latestDate = parsed;
+                    }
+                }
+            }
+            if (!latestDate) return 'N/A';
+            const y = latestDate.getFullYear();
+            const m = String(latestDate.getMonth() + 1).padStart(2, '0');
+            const d = String(latestDate.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
         // Calculate and display numbers inside the switcher widgets
         function updateProvinceCounts(arrays) {
             const countAll = masterData.length;
@@ -1388,6 +1419,12 @@
             document.getElementById('count-bc').innerText = countBc.toLocaleString();
             document.getElementById('count-ab').innerText = countAb.toLocaleString();
             document.getElementById('count-sk').innerText = countSk.toLocaleString();
+
+            document.getElementById('updated-all').innerText = 'Last update: ' + getLatestFilingDate(masterData);
+            document.getElementById('updated-on').innerText = 'Last update: ' + getLatestFilingDate(arrays[0]);
+            document.getElementById('updated-bc').innerText = 'Last update: ' + getLatestFilingDate(arrays[1]);
+            document.getElementById('updated-ab').innerText = 'Last update: ' + getLatestFilingDate(arrays[2]);
+            document.getElementById('updated-sk').innerText = 'Last update: ' + getLatestFilingDate(arrays[3] || []);
         }
 
         // Triggered by clicking switcher cards
