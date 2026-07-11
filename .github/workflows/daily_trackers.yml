@@ -57,6 +57,15 @@ jobs:
       run: |
         python ontario/ontario_lobbyist_scraper.py
 
+    - name: Run Saskatchewan Scraper
+      continue-on-error: true
+      env:
+        SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+        SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+      run: |
+        python saskatchewan/saskatchewan_lobbyist_scraper.py
+
     - name: Commit and Push Updated Databases
       run: |
         git config --global user.name "GitHub Actions Bot"
@@ -68,6 +77,7 @@ jobs:
         git add alberta/alberta_lobbyists_historical.csv
         git add bc/bc_lobbyists_historical.csv
         git add ontario/ontario_lobbyists_historical.csv
+        git add saskatchewan/saskatchewan_lobbyists_historical.csv
         
-        git commit -m "Automated Daily Sync: Updated Alberta, BC, and Ontario databases" || true
+        git commit -m "Automated Daily Sync: Updated Alberta, BC, Ontario, and Saskatchewan databases" || true
         git push origin main || true

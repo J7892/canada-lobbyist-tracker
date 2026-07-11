@@ -224,8 +224,14 @@
         /* Province Switcher Cards */
         .province-switcher {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 1rem;
+        }
+
+        @media (max-width: 1200px) {
+            .province-switcher {
+                grid-template-columns: repeat(3, 1fr);
+            }
         }
 
         @media (max-width: 768px) {
@@ -1041,6 +1047,19 @@
                     <a href="alberta/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
                 </div>
             </div>
+
+            <!-- Saskatchewan Switcher -->
+            <div class="switcher-card" data-prov="SK" onclick="filterByProvince('SK')">
+                <div class="switcher-card-header">
+                    <span class="switcher-title">Saskatchewan</span>
+                    <span class="switcher-badge">SK</span>
+                </div>
+                <div class="switcher-count" id="count-sk">-</div>
+                <div class="switcher-meta">
+                    <span>Registry database</span>
+                    <a href="saskatchewan/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
+                </div>
+            </div>
         </section>
 
         <!-- Stats Bar -->
@@ -1092,10 +1111,11 @@
                 <div class="filter-group">
                     <label class="filter-label" for="province-select">Province Jurisdiction</label>
                     <select id="province-select" class="select-filter" onchange="syncProvinceFilter(this.value)">
-                        <option value="ALL">All Provinces (ON, BC, AB)</option>
+                        <option value="ALL">All Provinces (ON, BC, AB, SK)</option>
                         <option value="ON">Ontario (ON)</option>
                         <option value="BC">British Columbia (BC)</option>
                         <option value="AB">Alberta (AB)</option>
+                        <option value="SK">Saskatchewan (SK)</option>
                     </select>
                 </div>
 
@@ -1236,10 +1256,11 @@
                 const urls = {
                     ON: 'ontario/ontario_lobbyists_historical.csv',
                     BC: 'bc/bc_lobbyists_historical.csv',
-                    AB: 'alberta/alberta_lobbyists_historical.csv'
+                    AB: 'alberta/alberta_lobbyists_historical.csv',
+                    SK: 'saskatchewan/saskatchewan_lobbyists_historical.csv'
                 };
 
-                statusText.innerText = 'Fetching Ontario, B.C., and Alberta databases in parallel...';
+                statusText.innerText = 'Fetching Ontario, B.C., Alberta, and Saskatchewan databases in parallel...';
                 
                 // Fetch datasets in parallel
                 const fetchPromises = Object.entries(urls).map(async ([prov, url]) => {
@@ -1360,11 +1381,13 @@
             const countOn = arrays[0].length;
             const countBc = arrays[1].length;
             const countAb = arrays[2].length;
+            const countSk = arrays[3] ? arrays[3].length : 0;
 
             document.getElementById('count-all').innerText = countAll.toLocaleString();
             document.getElementById('count-on').innerText = countOn.toLocaleString();
             document.getElementById('count-bc').innerText = countBc.toLocaleString();
             document.getElementById('count-ab').innerText = countAb.toLocaleString();
+            document.getElementById('count-sk').innerText = countSk.toLocaleString();
         }
 
         // Triggered by clicking switcher cards
