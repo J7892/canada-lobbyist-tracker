@@ -1,0 +1,73 @@
+name: Daily Canadian Lobbyist Scrapers
+
+on:
+  schedule:
+    # Triggers every day at 11:00 UTC (7:00 AM Toronto time)
+    - cron: '0 11 * * *'
+  workflow_dispatch: # Allows manual trigger from the Actions tab
+
+jobs:
+  scrape_and_commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Check out repository code
+      uses: actions/checkout@v4
+
+    - name: Set up Python Environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas playwright pypdf beautifulsoup4 lxml
+
+    - name: Install Playwright Chromium Browser
+      run: |
+        playwright install chromium
+
+    - name: Run Alberta Scraper
+      continue-on-error: true
+      env:
+        SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+        SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+      run: |
+        python alberta/alberta_lobbyist_scraper.py
+
+    - name: Run BC Scraper
+      continue-on-error: true
+      env:
+        SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+        SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+      run: |
+        python bc/bc_lobbyist_scraper.py
+
+    - name: Run Ontario Scraper
+      continue-on-error: true
+      env:
+        SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+        SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+      run: |
+        python ontario/ontario_lobbyist_scraper.py
+
+    - name: Commit and Push Updated Databases
+      run: |
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
+        
+        # Pull latest changes to avoid conflicts in case of concurrent runs
+        git pull --rebase origin main || true
+        
+        git add alberta/alberta_lobbyists_historical.csv
+        git add bc/bc_lobbyists_historical.csv
+        git add ontario/ontario_lobbyists_historical.csv
+        
+        git commit -m "Automated Daily Sync: Updated Alberta, BC, and Ontario databases" || true
+        git push origin main || true

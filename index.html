@@ -1,0 +1,1875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canada Lobbyist Registry Tracker</title>
+    
+    <!-- Modern Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- PapaParse for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <style>
+        /* Design Tokens & Theme System */
+        :root {
+            /* Light Theme (Default) */
+            --bg-base: #f8fafc;
+            --bg-surface: #ffffff;
+            --bg-surface-elevated: #f1f5f9;
+            --border-color: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: #eef2ff;
+            
+            --prov-on: #10b981;
+            --prov-on-bg: #ecfdf5;
+            --prov-bc: #0284c7;
+            --prov-bc-bg: #f0f9ff;
+            --prov-ab: #d97706;
+            --prov-ab-bg: #fffbeb;
+            
+            --success: #10b981;
+            --success-bg: #ecfdf5;
+            --success-text: #065f46;
+            
+            --terminated: #ef4444;
+            --terminated-bg: #fef2f2;
+            --terminated-text: #991b1b;
+            
+            --warning: #f59e0b;
+            --warning-bg: #fef3c7;
+            --warning-text: #78350f;
+            
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.08);
+            --shadow-glass: 0 8px 32px 0 rgba(148, 163, 184, 0.08);
+            
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-full: 9999px;
+            
+            --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            /* Dark Theme */
+            --bg-base: #0b0f19;
+            --bg-surface: #111827;
+            --bg-surface-elevated: #1f2937;
+            --border-color: #374151;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-muted: #9ca3af;
+            
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-light: #1e1b4b;
+            
+            --prov-on: #34d399;
+            --prov-on-bg: #064e3b;
+            --prov-bc: #38bdf8;
+            --prov-bc-bg: #0c4a6e;
+            --prov-ab: #fbbf24;
+            --prov-ab-bg: #78350f;
+            
+            --success: #34d399;
+            --success-bg: #064e3b;
+            --success-text: #a7f3d0;
+            
+            --terminated: #f87171;
+            --terminated-bg: #7f1d1d;
+            --terminated-text: #fecaca;
+            
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+            --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Basic Resets */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            transition: var(--transition-smooth);
+            min-height: 100vh;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+        }
+
+        /* Header / Navigation */
+        .app-header {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: var(--transition-smooth);
+            backdrop-filter: blur(8px);
+            background-color: rgba(17, 24, 39, 0.05); /* Dynamic transparent default */
+        }
+        
+        body:not([data-theme="dark"]) .app-header {
+            background-color: rgba(255, 255, 255, 0.85);
+        }
+        
+        body[data-theme="dark"] .app-header {
+            background-color: rgba(17, 24, 39, 0.85);
+        }
+
+        .header-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .brand-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: linear-gradient(135deg, var(--primary), #818cf8);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+            font-size: 1.25rem;
+            font-family: 'Outfit', sans-serif;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .brand-text h1 {
+            font-size: 1.25rem;
+            line-height: 1.2;
+            color: var(--text-primary);
+        }
+
+        .brand-text p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .theme-toggle-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 0.5rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition-smooth);
+        }
+
+        .theme-toggle-btn:hover {
+            background-color: var(--bg-surface-elevated);
+            color: var(--primary);
+        }
+
+        .theme-toggle-btn svg {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        /* Layout Main Grid */
+        .app-main {
+            flex: 1;
+            max-width: 1440px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Province Switcher Cards */
+        .province-switcher {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .province-switcher {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .switcher-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 1.25rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .switcher-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background-color: var(--text-muted);
+            transition: var(--transition-smooth);
+        }
+
+        .switcher-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .switcher-card.active {
+            border-color: var(--primary);
+            background-color: var(--primary-light);
+        }
+
+        .switcher-card.active::after {
+            background-color: var(--primary);
+        }
+
+        /* Color indicators per province */
+        .switcher-card[data-prov="ON"]::after { background-color: var(--prov-on); }
+        .switcher-card[data-prov="BC"]::after { background-color: var(--prov-bc); }
+        .switcher-card[data-prov="AB"]::after { background-color: var(--prov-ab); }
+
+        .switcher-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .switcher-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .switcher-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.2rem 0.5rem;
+            border-radius: var(--radius-full);
+            text-transform: uppercase;
+        }
+
+        .switcher-card[data-prov="ALL"] .switcher-badge { background-color: var(--border-color); color: var(--text-secondary); }
+        .switcher-card[data-prov="ON"] .switcher-badge { background-color: var(--prov-on-bg); color: var(--prov-on); }
+        .switcher-card[data-prov="BC"] .switcher-badge { background-color: var(--prov-bc-bg); color: var(--prov-bc); }
+        .switcher-card[data-prov="AB"] .switcher-badge { background-color: var(--prov-ab-bg); color: var(--prov-ab); }
+
+        .switcher-count {
+            font-size: 1.75rem;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-primary);
+        }
+
+        .switcher-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .switcher-link {
+            color: var(--primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-weight: 600;
+        }
+
+        .switcher-link:hover {
+            text-decoration: underline;
+        }
+
+        /* General Stats Panel */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
+        }
+
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 640px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stats-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 1.25rem;
+            border-radius: var(--radius-md);
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stats-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stats-value {
+            font-size: 1.75rem;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-primary);
+        }
+
+        .stats-subtext {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Workspace Grid (Sidebar + List) */
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            .workspace-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Sidebar Filters */
+        .filter-sidebar {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 5.5rem;
+        }
+
+        .filter-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .search-input-wrapper {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.25rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background-color: var(--bg-surface);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: var(--transition-smooth);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .select-filter {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background-color: var(--bg-surface);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: inherit;
+            outline: none;
+            transition: var(--transition-smooth);
+            cursor: pointer;
+        }
+
+        .select-filter:focus {
+            border-color: var(--primary);
+        }
+
+        /* Sidebar Action Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            border: 1px solid transparent;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-surface-elevated);
+            color: var(--text-secondary);
+            border-color: var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-danger {
+            background-color: var(--terminated-bg);
+            color: var(--terminated-text);
+            border-color: var(--terminated-text);
+        }
+
+        .btn-danger:hover {
+            background-color: var(--terminated-text);
+            color: white;
+        }
+
+        .sidebar-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        /* Content Area (Filings List) */
+        .content-area {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .results-count {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .sort-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Cards Grid */
+        .filings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .filing-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            transition: var(--transition-smooth);
+            position: relative;
+        }
+
+        .filing-card:hover {
+            box-shadow: var(--shadow-md);
+            border-color: var(--text-muted);
+        }
+
+        /* Filing Card Header */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.75rem;
+        }
+
+        .card-meta-left {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .card-province-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.25rem 0.6rem;
+            border-radius: var(--radius-full);
+            text-transform: uppercase;
+        }
+
+        .card-province-badge[data-prov="ON"] { background-color: var(--prov-on-bg); color: var(--prov-on); border: 1px solid var(--prov-on); }
+        .card-province-badge[data-prov="BC"] { background-color: var(--prov-bc-bg); color: var(--prov-bc); border: 1px solid var(--prov-bc); }
+        .card-province-badge[data-prov="AB"] { background-color: var(--prov-ab-bg); color: var(--prov-ab); border: 1px solid var(--prov-ab); }
+
+        .card-status-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.25rem 0.6rem;
+            border-radius: var(--radius-full);
+            text-transform: uppercase;
+        }
+
+        .card-status-badge[data-status="Active"] { background-color: var(--success-bg); color: var(--success-text); }
+        .card-status-badge[data-status="Terminated"] { background-color: var(--terminated-bg); color: var(--terminated-text); }
+        .card-status-badge[data-status="Inactive"] { background-color: var(--terminated-bg); color: var(--terminated-text); }
+        .card-status-badge[data-status="Unknown"] { background-color: var(--bg-surface-elevated); color: var(--text-secondary); }
+
+        .card-reg-type {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background-color: var(--bg-surface-elevated);
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-sm);
+        }
+
+        .card-date-badge {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .card-reg-num {
+            font-size: 0.8rem;
+            font-family: 'Fira Code', monospace;
+            color: var(--text-muted);
+        }
+
+        /* Filing Card Body */
+        .card-body {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        .org-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .client-info {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .client-label {
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .card-grid-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 0.25rem;
+        }
+
+        @media (max-width: 640px) {
+            .card-grid-details {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .detail-value {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .detail-value.lobbyists-list {
+            font-weight: 500;
+        }
+
+        .subject-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            background-color: var(--bg-base);
+            padding: 0.75rem;
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--primary);
+        }
+
+        /* Disclosure expander using <details> */
+        .details-expander {
+            margin-top: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            transition: var(--transition-smooth);
+        }
+
+        .details-expander[open] {
+            border-color: var(--text-muted);
+        }
+
+        .details-summary {
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            background-color: var(--bg-surface-elevated);
+            user-select: none;
+            transition: var(--transition-smooth);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .details-summary:hover {
+            background-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .details-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .details-summary::after {
+            content: '▼';
+            font-size: 0.7rem;
+            transition: transform 0.2s ease;
+        }
+
+        .details-expander[open] .details-summary::after {
+            transform: rotate(180deg);
+        }
+
+        .details-content {
+            padding: 1rem;
+            background-color: var(--bg-base);
+            border-top: 1px solid var(--border-color);
+            max-height: 250px;
+            overflow-y: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+            color: var(--text-secondary);
+        }
+
+        /* Pagination Footer */
+        .pagination-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            margin-top: 1rem;
+        }
+
+        .pagination-info {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .pagination-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .page-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem 0.75rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: var(--transition-smooth);
+        }
+
+        .page-btn:hover:not(:disabled) {
+            background-color: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .page-btn.active {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .page-size-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* Loading Screen overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-spinner {
+            width: 4rem;
+            height: 4rem;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+            margin-bottom: 1.5rem;
+        }
+
+        .loading-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: -0.02em;
+        }
+
+        .loading-status {
+            font-size: 1rem;
+            color: #94a3b8;
+            margin-bottom: 2rem;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .progress-bar-container {
+            width: 300px;
+            height: 6px;
+            background-color: #334155;
+            border-radius: var(--radius-full);
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary), #818cf8);
+            transition: width 0.3s ease;
+            border-radius: var(--radius-full);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty state styling */
+        .empty-state {
+            background-color: var(--bg-surface);
+            border: 1px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 4rem 2rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            color: var(--text-muted);
+        }
+
+        .empty-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .empty-desc {
+            color: var(--text-muted);
+            max-width: 400px;
+            font-size: 0.95rem;
+        }
+
+        /* App Footer */
+        .app-footer {
+            background-color: var(--bg-surface);
+            border-top: 1px solid var(--border-color);
+            padding: 1.5rem 2rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-title">Loading Database</div>
+        <div id="loading-status" class="loading-status">Connecting to registries...</div>
+        <div class="progress-bar-container">
+            <div id="progress-fill" class="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <!-- App Header -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand-section">
+                <div class="brand-icon">🇨🇦</div>
+                <div class="brand-text">
+                    <h1>Canada Lobbyist Registry Tracker</h1>
+                    <p>Consolidated Provincial Monitoring & Analysis</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <button id="theme-toggle" class="theme-toggle-btn" title="Toggle Theme" aria-label="Toggle Theme">
+                    <!-- Light Mode Icon (Sun) -->
+                    <svg id="theme-sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="display:none;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m0 13.5V21M9.75 15h4.5M9 4.5l1.25 1.25m9.5 9.5-1.25-1.25M21 12h-2.25M5.25 12H3m14.25-6.75-1.25 1.25M6 18.75l1.25-1.25M18.75 18.75l-1.25-1.25M12 7.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9Z" />
+                    </svg>
+                    <!-- Dark Mode Icon (Moon) -->
+                    <svg id="theme-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="app-main">
+        
+        <!-- Province switcher widgets -->
+        <section class="province-switcher">
+            <!-- All switcher -->
+            <div class="switcher-card active" data-prov="ALL" onclick="filterByProvince('ALL')">
+                <div class="switcher-card-header">
+                    <span class="switcher-title">Canada (All)</span>
+                    <span class="switcher-badge">Unified</span>
+                </div>
+                <div class="switcher-count" id="count-all">-</div>
+                <div class="switcher-meta">
+                    <span>Consolidated databases</span>
+                </div>
+            </div>
+            
+            <!-- Ontario Switcher -->
+            <div class="switcher-card" data-prov="ON" onclick="filterByProvince('ON')">
+                <div class="switcher-card-header">
+                    <span class="switcher-title">Ontario</span>
+                    <span class="switcher-badge">ON</span>
+                </div>
+                <div class="switcher-count" id="count-on">-</div>
+                <div class="switcher-meta">
+                    <span>Registry database</span>
+                    <a href="ontario/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
+                </div>
+            </div>
+            
+            <!-- BC Switcher -->
+            <div class="switcher-card" data-prov="BC" onclick="filterByProvince('BC')">
+                <div class="switcher-card-header">
+                    <span class="switcher-title">British Columbia</span>
+                    <span class="switcher-badge">BC</span>
+                </div>
+                <div class="switcher-count" id="count-bc">-</div>
+                <div class="switcher-meta">
+                    <span>Registry database</span>
+                    <a href="bc/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
+                </div>
+            </div>
+            
+            <!-- Alberta Switcher -->
+            <div class="switcher-card" data-prov="AB" onclick="filterByProvince('AB')">
+                <div class="switcher-card-header">
+                    <span class="switcher-title">Alberta</span>
+                    <span class="switcher-badge">AB</span>
+                </div>
+                <div class="switcher-count" id="count-ab">-</div>
+                <div class="switcher-meta">
+                    <span>Registry database</span>
+                    <a href="alberta/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Bar -->
+        <section class="stats-grid">
+            <div class="stats-card">
+                <span class="stats-label">Total Scraped Filings</span>
+                <span class="stats-value" id="stats-total-filings">-</span>
+                <span class="stats-subtext">Across active filters</span>
+            </div>
+            <div class="stats-card">
+                <span class="stats-label">Active Registrations</span>
+                <span class="stats-value" id="stats-active-filings">-</span>
+                <span class="stats-subtext" id="stats-active-percent">-</span>
+            </div>
+            <div class="stats-card">
+                <span class="stats-label">Unique Organizations</span>
+                <span class="stats-value" id="stats-unique-orgs">-</span>
+                <span class="stats-subtext">Registered entities</span>
+            </div>
+            <div class="stats-card">
+                <span class="stats-label">Latest Scraped Record</span>
+                <span class="stats-value" id="stats-latest-date" style="font-size: 1.35rem; line-height: 1.6;">-</span>
+                <span class="stats-subtext">Most recent filing date</span>
+            </div>
+        </section>
+
+        <!-- Sidebar / Main Area Grid -->
+        <section class="workspace-grid">
+            
+            <!-- Left Column: Filters -->
+            <aside class="filter-sidebar">
+                <div class="filter-title">
+                    <span>Search Filters</span>
+                    <button class="btn btn-secondary" onclick="resetFilters()" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Reset</button>
+                </div>
+                
+                <!-- Global Text Search -->
+                <div class="filter-group">
+                    <label class="filter-label" for="global-search">Universal Keywords</label>
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.637 10.637Z" />
+                        </svg>
+                        <input type="text" id="global-search" class="search-input" placeholder="Search companies, lobbyists, subject...">
+                    </div>
+                </div>
+
+                <!-- Province select -->
+                <div class="filter-group">
+                    <label class="filter-label" for="province-select">Province Jurisdiction</label>
+                    <select id="province-select" class="select-filter" onchange="syncProvinceFilter(this.value)">
+                        <option value="ALL">All Provinces (ON, BC, AB)</option>
+                        <option value="ON">Ontario (ON)</option>
+                        <option value="BC">British Columbia (BC)</option>
+                        <option value="AB">Alberta (AB)</option>
+                    </select>
+                </div>
+
+                <!-- Registration status select -->
+                <div class="filter-group">
+                    <label class="filter-label" for="status-select">Registration Status</label>
+                    <select id="status-select" class="select-filter">
+                        <option value="ALL">All Statuses</option>
+                        <option value="Active">Active Only</option>
+                        <option value="Terminated">Terminated / Inactive Only</option>
+                    </select>
+                </div>
+
+                <!-- Lobbyist Type Select -->
+                <div class="filter-group">
+                    <label class="filter-label" for="lobbyist-type-select">Lobbyist Type</label>
+                    <select id="lobbyist-type-select" class="select-filter">
+                        <option value="ALL">All Types</option>
+                        <option value="Consultant">Consultant</option>
+                        <option value="In-house">In-house / Filer</option>
+                    </select>
+                </div>
+
+                <!-- Direct Actions -->
+                <div class="sidebar-actions">
+                    <button class="btn btn-primary" onclick="downloadConsolidatedCSV()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:1.1rem;height:1.1rem;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        Export Filtered CSV
+                    </button>
+                </div>
+            </aside>
+            
+            <!-- Right Column: Data View -->
+            <div class="content-area">
+                
+                <!-- Results Bar header -->
+                <div class="results-header">
+                    <div class="results-count" id="results-indicator">Showing - of - filings</div>
+                    
+                    <div class="sort-wrapper">
+                        <label class="filter-label" for="sort-select" style="margin-bottom:0;">Sort:</label>
+                        <select id="sort-select" class="select-filter" style="width:auto; padding: 0.35rem 1.5rem 0.35rem 0.5rem; font-size:0.85rem;" onchange="applySort(this.value)">
+                            <option value="DATE_DESC">Date (Newest First)</option>
+                            <option value="DATE_ASC">Date (Oldest First)</option>
+                            <option value="ORG_ASC">Organization (A-Z)</option>
+                            <option value="ORG_DESC">Organization (Z-A)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Filings Cards List container -->
+                <div id="filings-list" class="filings-list">
+                    <!-- Cards will be populated dynamically -->
+                </div>
+
+                <!-- Pagination footer -->
+                <footer class="pagination-footer">
+                    <div class="pagination-info" id="pagination-info">
+                        Showing page - of -
+                    </div>
+                    
+                    <div class="pagination-nav" id="pagination-nav">
+                        <!-- Buttons will be populated dynamically -->
+                    </div>
+
+                    <div class="page-size-selector">
+                        <label for="rows-per-page">Rows per page:</label>
+                        <select id="rows-per-page" class="select-filter" style="width:auto; padding: 0.25rem 1.5rem 0.25rem 0.5rem; font-size:0.85rem;" onchange="changePageSize(this.value)">
+                            <option value="15">15 rows</option>
+                            <option value="25">25 rows</option>
+                            <option value="50">50 rows</option>
+                            <option value="100">100 rows</option>
+                        </select>
+                    </div>
+                </footer>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <p>&copy; 2026 Canada Lobbyist Registry Consolidated Monitor. Powered by Automated GitHub Action Trackers.</p>
+    </footer>
+
+    <script>
+        // Data State
+        let masterData = [];      // Raw combined rows from all provinces
+        let filteredData = [];    // Filtered subset
+        let activeProvince = 'ALL';
+        let currentPage = 1;
+        let itemsPerPage = 15;
+        let sortMethod = 'DATE_DESC';
+
+        // Load & Initialize
+        document.addEventListener('DOMContentLoaded', initApp);
+
+        // Theme Management
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeSunIcon = document.getElementById('theme-sun');
+        const themeMoonIcon = document.getElementById('theme-moon');
+
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = document.body.getAttribute('data-theme');
+            if (currentTheme === 'dark') {
+                document.body.removeAttribute('data-theme');
+                themeSunIcon.style.display = 'none';
+                themeMoonIcon.style.display = 'block';
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.body.setAttribute('data-theme', 'dark');
+                themeSunIcon.style.display = 'block';
+                themeMoonIcon.style.display = 'none';
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        // Initialize preferred theme
+        if (localStorage.getItem('theme') === 'dark' || 
+            (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.body.setAttribute('data-theme', 'dark');
+            themeSunIcon.style.display = 'block';
+            themeMoonIcon.style.display = 'none';
+        }
+
+        async function initApp() {
+            const progressFill = document.getElementById('progress-fill');
+            const statusText = document.getElementById('loading-status');
+            
+            try {
+                // Set initial progress
+                progressFill.style.width = '10%';
+                
+                // Paths to datasets
+                const urls = {
+                    ON: 'ontario/ontario_lobbyists_historical.csv',
+                    BC: 'bc/bc_lobbyists_historical.csv',
+                    AB: 'alberta/alberta_lobbyists_historical.csv'
+                };
+
+                statusText.innerText = 'Fetching Ontario, B.C., and Alberta databases in parallel...';
+                
+                // Fetch datasets in parallel
+                const fetchPromises = Object.entries(urls).map(async ([prov, url]) => {
+                    try {
+                        const res = await fetch(url);
+                        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+                        const text = await res.text();
+                        return { province: prov, text: text, success: true };
+                    } catch (e) {
+                        console.error(`Error loading database for ${prov}:`, e);
+                        return { province: prov, text: '', success: false, error: e };
+                    }
+                });
+
+                progressFill.style.width = '40%';
+                const results = await Promise.all(fetchPromises);
+                progressFill.style.width = '70%';
+
+                statusText.innerText = 'Parsing database csv grids...';
+                let parsePromises = results.map(result => {
+                    return new Promise((resolve) => {
+                        if (!result.success || !result.text) {
+                            resolve([]);
+                            return;
+                        }
+
+                        Papa.parse(result.text, {
+                            header: true,
+                            skipEmptyLines: true,
+                            complete: function(parsed) {
+                                // Add province tag to every row
+                                const mapped = parsed.data.map(row => {
+                                    return {
+                                        province: result.province,
+                                        filingDate: (row['FILING DATE'] || '').trim(),
+                                        terminationDate: (row['TERMINATION DATE'] || '').trim(),
+                                        organization: (row['ORGANIZATION'] || '').trim(),
+                                        clientName: (row['CLIENT NAME'] || '').trim(),
+                                        designatedFiler: (row['DESIGNATED FILER'] || '').trim(),
+                                        deptLobbied: (row['GOVERNMENT DEPARTMENT LOBBIED'] || '').trim(),
+                                        entityLobbied: (row['PRESCRIBED PROVINCIAL ENTITY LOBBIED'] || '').trim(),
+                                        subjectMatter: (row['SUBJECT MATTER OF LOBBYING'] || '').trim(),
+                                        registrationNumber: (row['REGISTRATION NUMBER'] || '').trim(),
+                                        lobbyistType: (row['TYPE OF LOBBYIST'] || row['TYPE OF LOBBIIST'] || '').trim(),
+                                        lobbyists: (row['LOBBYISTS'] || '').trim(),
+                                        registrationType: (row['TYPE OF REGISTRATION'] || '').trim(),
+                                        registrationStatus: (row['REGISTRATION STATUS'] || '').trim(),
+                                        extractedPdfDetails: (row['EXTRACTED_PDF_DETAILS'] || '').trim()
+                                    };
+                                });
+                                resolve(mapped);
+                            }
+                        });
+                    });
+                });
+
+                const parsedDataArrays = await Promise.all(parsePromises);
+                progressFill.style.width = '90%';
+
+                // Consolidate into single array
+                masterData = parsedDataArrays.flat();
+                
+                // Close loading screen
+                progressFill.style.width = '100%';
+                statusText.innerText = 'Initializing portal...';
+                
+                setTimeout(() => {
+                    document.getElementById('loading-screen').style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById('loading-screen').style.display = 'none';
+                    }, 500);
+                }, 400);
+
+                // Initial processing
+                updateProvinceCounts(parsedDataArrays);
+                
+                // Setup Search listeners
+                setupSearchListeners();
+                
+                // Execute initial filter
+                applyFilters();
+
+            } catch (err) {
+                console.error("Critical failure during initialization:", err);
+                statusText.innerHTML = `<span style="color:#ef4444;font-weight:700;">Initialization Failed:</span><br>${err.message}<br><br>Please make sure you are running a local web server (e.g. <code>python3 -m http.server 8080</code>) and that the csv files exist.`;
+                progressFill.style.backgroundColor = '#ef4444';
+            }
+        }
+
+        // Setup live listener bindings
+        function setupSearchListeners() {
+            const searchInput = document.getElementById('global-search');
+            const statusSelect = document.getElementById('status-select');
+            const lobbyTypeSelect = document.getElementById('lobbyist-type-select');
+
+            // Global Search Input with debounce/immediate keyup filter
+            searchInput.addEventListener('input', () => {
+                currentPage = 1;
+                applyFilters();
+            });
+
+            // Status select filter changed
+            statusSelect.addEventListener('change', () => {
+                currentPage = 1;
+                applyFilters();
+            });
+
+            // Lobbyist Type filter changed
+            lobbyTypeSelect.addEventListener('change', () => {
+                currentPage = 1;
+                applyFilters();
+            });
+        }
+
+        // Calculate and display numbers inside the switcher widgets
+        function updateProvinceCounts(arrays) {
+            const countAll = masterData.length;
+            const countOn = arrays[0].length;
+            const countBc = arrays[1].length;
+            const countAb = arrays[2].length;
+
+            document.getElementById('count-all').innerText = countAll.toLocaleString();
+            document.getElementById('count-on').innerText = countOn.toLocaleString();
+            document.getElementById('count-bc').innerText = countBc.toLocaleString();
+            document.getElementById('count-ab').innerText = countAb.toLocaleString();
+        }
+
+        // Triggered by clicking switcher cards
+        function filterByProvince(prov) {
+            activeProvince = prov;
+            
+            // Sync active visual card status
+            document.querySelectorAll('.switcher-card').forEach(card => {
+                if (card.getAttribute('data-prov') === prov) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+
+            // Sync sidebar dropdown selection
+            document.getElementById('province-select').value = prov;
+            
+            currentPage = 1;
+            applyFilters();
+        }
+
+        // Triggered by sidebar province dropdown select changes
+        function syncProvinceFilter(val) {
+            activeProvince = val;
+            
+            // Sync active visual card status
+            document.querySelectorAll('.switcher-card').forEach(card => {
+                if (card.getAttribute('data-prov') === val) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+
+            currentPage = 1;
+            applyFilters();
+        }
+
+        // Apply filters to master dataset
+        function applyFilters() {
+            const query = document.getElementById('global-search').value.toLowerCase().trim();
+            const statusVal = document.getElementById('status-select').value;
+            const lobbyTypeVal = document.getElementById('lobbyist-type-select').value;
+
+            filteredData = masterData.filter(row => {
+                // 1. Province Filter
+                if (activeProvince !== 'ALL' && row.province !== activeProvince) {
+                    return false;
+                }
+
+                // 2. Status Filter
+                if (statusVal !== 'ALL') {
+                    const status = row.registrationStatus.toLowerCase();
+                    const isActive = status.includes('active');
+                    const isTerminated = status.includes('terminate') || status.includes('inactive');
+                    
+                    if (statusVal === 'Active' && !isActive) return false;
+                    if (statusVal === 'Terminated' && !isTerminated) return false;
+                }
+
+                // 3. Lobbyist Type Filter
+                if (lobbyTypeVal !== 'ALL') {
+                    const type = row.lobbyistType.toLowerCase();
+                    const isConsultant = type.includes('consultant');
+                    const isInhouse = type.includes('inhouse') || type.includes('in-house') || type.includes('filer') || type.includes('officer');
+                    
+                    if (lobbyTypeVal === 'Consultant' && !isConsultant) return false;
+                    if (lobbyTypeVal === 'In-house' && !isInhouse) return false;
+                }
+
+                // 4. Keyword Search
+                if (query) {
+                    const org = row.organization.toLowerCase();
+                    const client = row.clientName.toLowerCase();
+                    const filer = row.designatedFiler.toLowerCase();
+                    const lobbyist = row.lobbyists.toLowerCase();
+                    const subject = row.subjectMatter.toLowerCase();
+                    const details = row.extractedPdfDetails.toLowerCase();
+                    
+                    const match = org.includes(query) || 
+                                  client.includes(query) || 
+                                  filer.includes(query) || 
+                                  lobbyist.includes(query) || 
+                                  subject.includes(query) || 
+                                  details.includes(query);
+                                  
+                    if (!match) return false;
+                }
+
+                return true;
+            });
+
+            // Re-apply sort
+            sortData();
+            
+            // Re-render UI
+            updateStats();
+            renderTable();
+        }
+
+        // Sort data based on sortMethod
+        function sortData() {
+            filteredData.sort((a, b) => {
+                if (sortMethod === 'DATE_DESC' || sortMethod === 'DATE_ASC') {
+                    const dateA = parseFilingDate(a.filingDate);
+                    const dateB = parseFilingDate(b.filingDate);
+                    if (!dateA && !dateB) return 0;
+                    if (!dateA) return 1;
+                    if (!dateB) return -1;
+                    
+                    return sortMethod === 'DATE_DESC' ? dateB - dateA : dateA - dateB;
+                }
+                
+                if (sortMethod === 'ORG_ASC' || sortMethod === 'ORG_DESC') {
+                    const orgA = a.organization.toLowerCase();
+                    const orgB = b.organization.toLowerCase();
+                    if (orgA < orgB) return sortMethod === 'ORG_ASC' ? -1 : 1;
+                    if (orgA > orgB) return sortMethod === 'ORG_ASC' ? 1 : -1;
+                    return 0;
+                }
+                
+                return 0;
+            });
+        }
+
+        function applySort(val) {
+            sortMethod = val;
+            currentPage = 1;
+            sortData();
+            renderTable();
+        }
+
+        // Reset Filter inputs
+        function resetFilters() {
+            document.getElementById('global-search').value = '';
+            document.getElementById('status-select').value = 'ALL';
+            document.getElementById('lobbyist-type-select').value = 'ALL';
+            document.getElementById('sort-select').value = 'DATE_DESC';
+            
+            sortMethod = 'DATE_DESC';
+            filterByProvince('ALL');
+        }
+
+        // Helper: Robust Date Parser
+        function parseFilingDate(dateStr) {
+            if (!dateStr || dateStr === '-') return null;
+            dateStr = dateStr.trim();
+            
+            // Try ISO/Standard Date String parser
+            const parsed = Date.parse(dateStr);
+            if (!isNaN(parsed)) {
+                return new Date(parsed);
+            }
+            
+            // Split on hyphens
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                // Try YYYY-MM-DD
+                if (parts[0].length === 4) {
+                    const year = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10) - 1;
+                    const day = parseInt(parts[2], 10);
+                    return new Date(year, month, day);
+                }
+                
+                // Try DD-MMM-YYYY
+                const day = parseInt(parts[0], 10);
+                const monthStr = parts[1].toLowerCase().slice(0, 3);
+                const year = parseInt(parts[2], 10);
+                
+                const months = {
+                    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+                    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+                };
+                
+                const month = months[monthStr];
+                if (month !== undefined) {
+                    return new Date(year, month, day);
+                }
+            }
+            
+            return null;
+        }
+
+        // Recompute stats boxes
+        function updateStats() {
+            const totalCount = filteredData.length;
+            let activeCount = 0;
+            const orgs = new Set();
+            let latestDate = null;
+            
+            filteredData.forEach(row => {
+                // Active count
+                if (row.registrationStatus.toLowerCase().includes('active')) {
+                    activeCount++;
+                }
+                // Unique orgs
+                if (row.organization) {
+                    orgs.add(row.organization);
+                }
+                // Max date
+                const date = parseFilingDate(row.filingDate);
+                if (date) {
+                    if (!latestDate || date > latestDate) {
+                        latestDate = date;
+                    }
+                }
+            });
+
+            const activePercent = totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 0;
+
+            document.getElementById('stats-total-filings').innerText = totalCount.toLocaleString();
+            document.getElementById('stats-active-filings').innerText = activeCount.toLocaleString();
+            document.getElementById('stats-active-percent').innerText = `${activePercent}% of total filtered`;
+            document.getElementById('stats-unique-orgs').innerText = orgs.size.toLocaleString();
+            
+            if (latestDate) {
+                const options = { year: 'numeric', month: 'short', day: 'numeric' };
+                document.getElementById('stats-latest-date').innerText = latestDate.toLocaleDateString('en-CA', options);
+            } else {
+                document.getElementById('stats-latest-date').innerText = '-';
+            }
+        }
+
+        // Render card results to page
+        function renderTable() {
+            const filingsList = document.getElementById('filings-list');
+            filingsList.innerHTML = '';
+
+            const totalRows = filteredData.length;
+            const totalPages = Math.ceil(totalRows / itemsPerPage) || 1;
+            
+            // Adjust current page bounds
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            // Update result counts indicator
+            const startIdx = (currentPage - 1) * itemsPerPage;
+            const endIdx = Math.min(startIdx + itemsPerPage, totalRows);
+            document.getElementById('results-indicator').innerText = totalRows > 0 ? 
+                `Showing ${startIdx + 1} - ${endIdx} of ${totalRows.toLocaleString()} filings` : 
+                `Showing 0 filings`;
+
+            if (totalRows === 0) {
+                filingsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📂</div>
+                        <div class="empty-title">No Filings Found</div>
+                        <p class="empty-desc">No records match your filters. Try clearing your search term or adjusting status/lobbyist options.</p>
+                    </div>
+                `;
+                document.getElementById('pagination-info').innerText = 'Showing page 1 of 1';
+                document.getElementById('pagination-nav').innerHTML = '';
+                return;
+            }
+
+            // Slice out active page rows
+            const pageData = filteredData.slice(startIdx, endIdx);
+
+            pageData.forEach(row => {
+                const card = document.createElement('article');
+                card.className = 'filing-card';
+
+                // Status formatting
+                let normalizedStatus = 'Unknown';
+                const statusLower = row.registrationStatus.toLowerCase();
+                if (statusLower.includes('active')) {
+                    normalizedStatus = 'Active';
+                } else if (statusLower.includes('terminate') || statusLower.includes('inactive')) {
+                    normalizedStatus = 'Terminated';
+                }
+
+                // Shorten subject text if too long
+                const subjectFull = row.subjectMatter || 'No subject matter stated.';
+                
+                // Setup lobbyists lists
+                const lobbyistsStr = row.lobbyists || '-';
+                
+                // Targets
+                const targetsArr = [];
+                if (row.deptLobbied && row.deptLobbied !== '-') targetsArr.push(row.deptLobbied);
+                if (row.entityLobbied && row.entityLobbied !== '-') targetsArr.push(row.entityLobbied);
+                const targetsStr = targetsArr.length > 0 ? targetsArr.join('; ') : 'Not specified';
+
+                // Extracted disclosure preview (truncated)
+                const disclosureFull = row.extractedPdfDetails || 'No details extracted.';
+                const disclosurePreview = disclosureFull.length > 180 ? 
+                    disclosureFull.slice(0, 180).trim() + '...' : 
+                    disclosureFull;
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="card-meta-left">
+                            <span class="card-province-badge" data-prov="${row.province}">${row.province}</span>
+                            <span class="card-status-badge" data-status="${normalizedStatus}">${row.registrationStatus || 'Unknown'}</span>
+                            ${row.registrationType ? `<span class="card-reg-type">${row.registrationType}</span>` : ''}
+                            ${row.registrationNumber ? `<span class="card-reg-num">${row.registrationNumber}</span>` : ''}
+                        </div>
+                        <div class="card-date-badge">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:0.95rem;height:0.95rem;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                            </svg>
+                            Filed: <strong>${row.filingDate || 'N/A'}</strong>
+                            ${row.terminationDate && row.terminationDate !== '-' ? ` | Terminated: ${row.terminationDate}` : ''}
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <h3 class="org-title">${row.organization || 'Unnamed Organization'}</h3>
+                        
+                        ${row.clientName && row.clientName !== row.organization ? `
+                            <div class="client-info">
+                                <span class="client-label">Lobbying on behalf of:</span>
+                                <span>${row.clientName}</span>
+                            </div>
+                        ` : ''}
+
+                        <div class="card-grid-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Designated Filer / Type</span>
+                                <span class="detail-value">${row.designatedFiler || '-'}${row.lobbyistType ? ` (${row.lobbyistType})` : ''}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Lobbyists Engaged</span>
+                                <span class="detail-value lobbyists-list">${lobbyistsStr}</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-item" style="margin-top:0.25rem;">
+                            <span class="detail-label">Subject Matter</span>
+                            <div class="subject-text">${subjectFull}</div>
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">Target Government Agencies & Entities</span>
+                            <span class="detail-value" style="font-size:0.85rem;color:var(--text-secondary);">${targetsStr}</span>
+                        </div>
+
+                        <!-- Details expander -->
+                        <details class="details-expander">
+                            <summary class="details-summary">
+                                <span>Disclosure Text Preview (${disclosurePreview})</span>
+                            </summary>
+                            <div class="details-content">${disclosureFull}</div>
+                        </details>
+                    </div>
+                `;
+                
+                filingsList.appendChild(card);
+            });
+
+            // Render Pagination Nav Controls
+            renderPaginationNav(totalPages);
+        }
+
+        // Render pagination controls (previous, next, and sliding page indicators)
+        function renderPaginationNav(totalPages) {
+            const paginationNav = document.getElementById('pagination-nav');
+            paginationNav.innerHTML = '';
+            
+            document.getElementById('pagination-info').innerText = `Page ${currentPage} of ${totalPages}`;
+
+            // Previous button
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'page-btn';
+            prevBtn.innerHTML = '←';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => {
+                currentPage--;
+                renderTable();
+                window.scrollTo({ top: document.querySelector('.workspace-grid').offsetTop - 100, behavior: 'smooth' });
+            };
+            paginationNav.appendChild(prevBtn);
+
+            // Page numbers sliding window
+            const maxVisible = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            
+            if (endPage - startPage + 1 < maxVisible) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+
+            if (startPage > 1) {
+                const btn1 = document.createElement('button');
+                btn1.className = 'page-btn';
+                btn1.innerText = '1';
+                btn1.onclick = () => goToPage(1);
+                paginationNav.appendChild(btn1);
+
+                if (startPage > 2) {
+                    const dots = document.createElement('span');
+                    dots.innerText = '...';
+                    dots.style.padding = '0 0.5rem';
+                    dots.style.color = 'var(--text-muted)';
+                    paginationNav.appendChild(dots);
+                }
+            }
+
+            for (let p = startPage; p <= endPage; p++) {
+                const btn = document.createElement('button');
+                btn.className = `page-btn ${p === currentPage ? 'active' : ''}`;
+                btn.innerText = p;
+                btn.onclick = () => goToPage(p);
+                paginationNav.appendChild(btn);
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const dots = document.createElement('span');
+                    dots.innerText = '...';
+                    dots.style.padding = '0 0.5rem';
+                    dots.style.color = 'var(--text-muted)';
+                    paginationNav.appendChild(dots);
+                }
+
+                const btnLast = document.createElement('button');
+                btnLast.className = 'page-btn';
+                btnLast.innerText = totalPages;
+                btnLast.onclick = () => goToPage(totalPages);
+                paginationNav.appendChild(btnLast);
+            }
+
+            // Next button
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'page-btn';
+            nextBtn.innerHTML = '→';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => {
+                currentPage++;
+                renderTable();
+                window.scrollTo({ top: document.querySelector('.workspace-grid').offsetTop - 100, behavior: 'smooth' });
+            };
+            paginationNav.appendChild(nextBtn);
+        }
+
+        function goToPage(p) {
+            currentPage = p;
+            renderTable();
+            window.scrollTo({ top: document.querySelector('.workspace-grid').offsetTop - 100, behavior: 'smooth' });
+        }
+
+        function changePageSize(size) {
+            itemsPerPage = parseInt(size, 10);
+            currentPage = 1;
+            renderTable();
+        }
+
+        // Export filtered grid data to a local CSV file natively
+        function downloadConsolidatedCSV() {
+            if (filteredData.length === 0) {
+                alert("No records to export.");
+                return;
+            }
+
+            // Header Row
+            const headers = [
+                'PROVINCE', 'FILING DATE', 'TERMINATION DATE', 'ORGANIZATION', 'CLIENT NAME', 
+                'DESIGNATED FILER', 'GOVERNMENT DEPARTMENT LOBBIED', 'PRESCRIBED PROVINCIAL ENTITY LOBBIED', 
+                'SUBJECT MATTER OF LOBBYING', 'REGISTRATION NUMBER', 'TYPE OF LOBBYIST', 'LOBBYISTS', 
+                'TYPE OF REGISTRATION', 'REGISTRATION STATUS', 'EXTRACTED_PDF_DETAILS'
+            ];
+
+            // Map data arrays
+            const csvRows = [headers.join(',')];
+            
+            filteredData.forEach(row => {
+                const values = [
+                    row.province,
+                    row.filingDate,
+                    row.terminationDate,
+                    row.organization,
+                    row.clientName,
+                    row.designatedFiler,
+                    row.deptLobbied,
+                    row.entityLobbied,
+                    row.subjectMatter,
+                    row.registrationNumber,
+                    row.lobbyistType,
+                    row.lobbyists,
+                    row.registrationType,
+                    row.registrationStatus,
+                    row.extractedPdfDetails
+                ].map(val => {
+                    // Escape double quotes and wrap in quotes if contains commas/quotes/newlines
+                    const escaped = ('' + val).replace(/"/g, '""');
+                    return `"${escaped}"`;
+                });
+                csvRows.push(values.join(','));
+            });
+
+            const csvString = csvRows.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            const provinceSuffix = activeProvince !== 'ALL' ? `_${activeProvince.toLowerCase()}` : '_canada';
+            const timestamp = new Date().toISOString().slice(0, 10);
+            
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', `consolidated_lobbyists${provinceSuffix}_${timestamp}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+.DS_Store
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.log
+*.png
+*.html.bak
+*.csv.bak
+heartbeat.txt
+debug_page.html
