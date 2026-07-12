@@ -333,6 +333,7 @@
             width: 100%;
             border-collapse: collapse;
             text-align: left;
+            table-layout: fixed;
         }
 
         .dashboard-table th {
@@ -357,15 +358,16 @@
 
         .details-cell {
             padding: 24px;
-            width: 45%;
+            width: 40%;
             vertical-align: top;
         }
 
         .pdf-cell {
             padding: 24px;
-            width: 55%;
+            width: 60%;
             vertical-align: top;
             border-left: 1px solid var(--slate-100);
+            overflow: hidden;
         }
 
         /* Metadata item styling */
@@ -696,8 +698,8 @@
                     <table class="dashboard-table">
                         <thead>
                             <tr>
-                                <th>Registry Details</th>
-                                <th>Mandate Summary Description</th>
+                                <th style="width: 40%;">Registry Details</th>
+                                <th style="width: 60%;">Mandate Summary Description</th>
                             </tr>
                         </thead>
                         <tbody id="table-body">
