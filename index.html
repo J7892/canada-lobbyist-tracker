@@ -35,6 +35,12 @@
             --prov-bc-bg: #f0f9ff;
             --prov-ab: #d97706;
             --prov-ab-bg: #fffbeb;
+            --prov-sk: #eab308;
+            --prov-sk-bg: #fefce8;
+            --prov-mb: #06b6d4;
+            --prov-mb-bg: #ecfeff;
+            --prov-qc: #8b5cf6;
+            --prov-qc-bg: #f5f3ff;
             
             --success: #10b981;
             --success-bg: #ecfdf5;
@@ -81,6 +87,12 @@
             --prov-bc-bg: #0c4a6e;
             --prov-ab: #fbbf24;
             --prov-ab-bg: #78350f;
+            --prov-sk: #fef08a;
+            --prov-sk-bg: #713f12;
+            --prov-mb: #22d3ee;
+            --prov-mb-bg: #083344;
+            --prov-qc: #a78bfa;
+            --prov-qc-bg: #2e1065;
             
             --success: #34d399;
             --success-bg: #064e3b;
@@ -281,9 +293,12 @@
         }
 
         /* Color indicators per province */
-        .switcher-card[data-prov="ON"]::after { background-color: var(--prov-on); }
         .switcher-card[data-prov="BC"]::after { background-color: var(--prov-bc); }
         .switcher-card[data-prov="AB"]::after { background-color: var(--prov-ab); }
+        .switcher-card[data-prov="SK"]::after { background-color: var(--prov-sk); }
+        .switcher-card[data-prov="MB"]::after { background-color: var(--prov-mb); }
+        .switcher-card[data-prov="ON"]::after { background-color: var(--prov-on); }
+        .switcher-card[data-prov="QC"]::after { background-color: var(--prov-qc); }
 
         .switcher-card-header {
             display: flex;
@@ -306,9 +321,12 @@
         }
 
         .switcher-card[data-prov="ALL"] .switcher-badge { background-color: var(--border-color); color: var(--text-secondary); }
-        .switcher-card[data-prov="ON"] .switcher-badge { background-color: var(--prov-on-bg); color: var(--prov-on); }
         .switcher-card[data-prov="BC"] .switcher-badge { background-color: var(--prov-bc-bg); color: var(--prov-bc); }
         .switcher-card[data-prov="AB"] .switcher-badge { background-color: var(--prov-ab-bg); color: var(--prov-ab); }
+        .switcher-card[data-prov="SK"] .switcher-badge { background-color: var(--prov-sk-bg); color: var(--prov-sk); }
+        .switcher-card[data-prov="MB"] .switcher-badge { background-color: var(--prov-mb-bg); color: var(--prov-mb); }
+        .switcher-card[data-prov="ON"] .switcher-badge { background-color: var(--prov-on-bg); color: var(--prov-on); }
+        .switcher-card[data-prov="QC"] .switcher-badge { background-color: var(--prov-qc-bg); color: var(--prov-qc); }
 
         .switcher-count {
             font-size: 1.75rem;
@@ -625,9 +643,12 @@
             text-transform: uppercase;
         }
 
-        .card-province-badge[data-prov="ON"] { background-color: var(--prov-on-bg); color: var(--prov-on); border: 1px solid var(--prov-on); }
         .card-province-badge[data-prov="BC"] { background-color: var(--prov-bc-bg); color: var(--prov-bc); border: 1px solid var(--prov-bc); }
         .card-province-badge[data-prov="AB"] { background-color: var(--prov-ab-bg); color: var(--prov-ab); border: 1px solid var(--prov-ab); }
+        .card-province-badge[data-prov="SK"] { background-color: var(--prov-sk-bg); color: var(--prov-sk); border: 1px solid var(--prov-sk); }
+        .card-province-badge[data-prov="MB"] { background-color: var(--prov-mb-bg); color: var(--prov-mb); border: 1px solid var(--prov-mb); }
+        .card-province-badge[data-prov="ON"] { background-color: var(--prov-on-bg); color: var(--prov-on); border: 1px solid var(--prov-on); }
+        .card-province-badge[data-prov="QC"] { background-color: var(--prov-qc-bg); color: var(--prov-qc); border: 1px solid var(--prov-qc); }
 
         .card-status-badge {
             font-size: 0.75rem;
@@ -959,6 +980,17 @@
             color: var(--text-muted);
             margin-top: auto;
         }
+
+        .translated-text-highlight {
+            animation: highlightFade 1.5s ease-out;
+            background-color: rgba(139, 92, 246, 0.08);
+            border-radius: var(--radius-sm);
+            padding: 0 4px;
+        }
+        @keyframes highlightFade {
+            0% { background-color: rgba(139, 92, 246, 0.3); }
+            100% { background-color: rgba(139, 92, 246, 0.08); }
+        }
     </style>
 </head>
 <body>
@@ -1086,6 +1118,20 @@
                     <a href="ontario/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
                 </div>
             </div>
+
+            <!-- Quebec Switcher -->
+            <div class="switcher-card" data-prov="QC" onclick="filterByProvince('QC')">
+                <div class="switcher-card-header">
+                    <span class="switcher-title">Quebec</span>
+                    <span class="switcher-badge">QC</span>
+                </div>
+                <div class="switcher-count" id="count-qc">-</div>
+                <div class="switcher-updated" id="updated-qc">Last update: -</div>
+                <div class="switcher-meta">
+                    <span>Registry database</span>
+                    <a href="quebec/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
+                </div>
+            </div>
         </section>
 
         <!-- Stats Bar -->
@@ -1137,12 +1183,13 @@
                 <div class="filter-group">
                     <label class="filter-label" for="province-select">Province Jurisdiction</label>
                     <select id="province-select" class="select-filter" onchange="syncProvinceFilter(this.value)">
-                        <option value="ALL">All Provinces (BC, AB, SK, MB, ON)</option>
+                        <option value="ALL">All Provinces (BC, AB, SK, MB, ON, QC)</option>
                         <option value="BC">British Columbia (BC)</option>
                         <option value="AB">Alberta (AB)</option>
                         <option value="SK">Saskatchewan (SK)</option>
                         <option value="MB">Manitoba (MB)</option>
                         <option value="ON">Ontario (ON)</option>
+                        <option value="QC">Quebec (QC)</option>
                     </select>
                 </div>
 
@@ -1285,10 +1332,11 @@
                     AB: 'alberta/alberta_lobbyists_historical.csv',
                     SK: 'saskatchewan/saskatchewan_lobbyists_historical.csv',
                     MB: 'manitoba/manitoba_lobbyists_historical.csv',
-                    ON: 'ontario/ontario_lobbyists_historical.csv'
+                    ON: 'ontario/ontario_lobbyists_historical.csv',
+                    QC: 'quebec/quebec_lobbyists_historical.csv'
                 };
 
-                statusText.innerText = 'Fetching B.C., Alberta, Saskatchewan, Manitoba, and Ontario databases in parallel...';
+                statusText.innerText = 'Fetching B.C., Alberta, Saskatchewan, Manitoba, Ontario, and Quebec databases in parallel...';
                 
                 // Fetch datasets in parallel
                 const fetchPromises = Object.entries(urls).map(async ([prov, url]) => {
@@ -1430,6 +1478,7 @@
             const countSk = arrays[2] ? arrays[2].length : 0;
             const countMb = arrays[3] ? arrays[3].length : 0;
             const countOn = arrays[4] ? arrays[4].length : 0;
+            const countQc = arrays[5] ? arrays[5].length : 0;
 
             document.getElementById('count-all').innerText = countAll.toLocaleString();
             document.getElementById('count-bc').innerText = countBc.toLocaleString();
@@ -1437,6 +1486,7 @@
             document.getElementById('count-sk').innerText = countSk.toLocaleString();
             document.getElementById('count-mb').innerText = countMb.toLocaleString();
             document.getElementById('count-on').innerText = countOn.toLocaleString();
+            document.getElementById('count-qc').innerText = countQc.toLocaleString();
 
             document.getElementById('updated-all').innerText = 'Last update: ' + getLatestFilingDate(masterData);
             document.getElementById('updated-bc').innerText = 'Last update: ' + getLatestFilingDate(arrays[0]);
@@ -1444,6 +1494,7 @@
             document.getElementById('updated-sk').innerText = 'Last update: ' + getLatestFilingDate(arrays[2] || []);
             document.getElementById('updated-mb').innerText = 'Last update: ' + getLatestFilingDate(arrays[3] || []);
             document.getElementById('updated-on').innerText = 'Last update: ' + getLatestFilingDate(arrays[4] || []);
+            document.getElementById('updated-qc').innerText = 'Last update: ' + getLatestFilingDate(arrays[5] || []);
         }
 
         // Triggered by clicking switcher cards
@@ -1790,6 +1841,14 @@
                             </summary>
                             <div class="details-content">${disclosureFull}</div>
                         </details>
+
+                        ${row.province === 'QC' ? `
+                            <div class="translation-wrapper" style="margin-top:0.75rem; border-top:1px dashed var(--border-color); padding-top:0.75rem;">
+                                <button class="btn btn-secondary translate-btn" onclick="toggleTranslation(this, '${encodeURIComponent(row.organization)}', '${encodeURIComponent(row.clientName)}', '${encodeURIComponent(row.subjectMatter)}')" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; display: flex; align-items: center; gap: 4px; border: 1px solid var(--border-color); background: none; border-radius: var(--radius-sm); cursor: pointer; color: var(--primary);">
+                                    <span>🌐 Translate to English</span>
+                                </button>
+                            </div>
+                        ` : ''}
                     </div>
                 `;
                 
@@ -1948,6 +2007,83 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        // --- Client-side Google Translate Integration ---
+        const translationCache = new Map();
+
+        async function translateText(text) {
+            if (!text || text === '-' || text === 'N/A') return text;
+            try {
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=fr&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("Translation request failed");
+                const data = await res.json();
+                return data[0].map(x => x[0]).join('');
+            } catch (e) {
+                console.error("Translation error:", e);
+                return text;
+            }
+        }
+
+        async function toggleTranslation(btn, orgEsc, clientEsc, subjectEsc) {
+            const cardBody = btn.closest('.filing-card').querySelector('.card-body');
+            const orgTitle = cardBody.querySelector('.org-title');
+            const clientVal = cardBody.querySelector('.client-info span:not(.client-label)');
+            const subjectText = cardBody.querySelector('.subject-text');
+            const detailsContent = cardBody.querySelector('.details-content');
+            
+            const orgOriginal = decodeURIComponent(orgEsc);
+            const clientOriginal = decodeURIComponent(clientEsc);
+            const subjectOriginal = decodeURIComponent(subjectEsc);
+            
+            const isTranslated = btn.getAttribute('data-translated') === 'true';
+            
+            if (isTranslated) {
+                orgTitle.innerText = orgOriginal;
+                if (clientVal) clientVal.innerText = clientOriginal;
+                subjectText.innerText = subjectOriginal;
+                if (detailsContent) detailsContent.innerText = subjectOriginal;
+                
+                btn.innerHTML = '<span>🌐 Translate to English</span>';
+                btn.setAttribute('data-translated', 'false');
+                orgTitle.classList.remove('translated-text-highlight');
+                subjectText.classList.remove('translated-text-highlight');
+            } else {
+                btn.disabled = true;
+                btn.innerHTML = '<span>⏳ Translating...</span>';
+                
+                const cacheKey = subjectOriginal;
+                let orgTrans, clientTrans, subjectTrans;
+                
+                if (translationCache.has(cacheKey)) {
+                    const cached = translationCache.get(cacheKey);
+                    orgTrans = cached.org;
+                    clientTrans = cached.client;
+                    subjectTrans = cached.subject;
+                } else {
+                    const [o, c, s] = await Promise.all([
+                        translateText(orgOriginal),
+                        translateText(clientOriginal),
+                        translateText(subjectOriginal)
+                    ]);
+                    orgTrans = o;
+                    clientTrans = c;
+                    subjectTrans = s;
+                    translationCache.set(cacheKey, { org: o, client: c, subject: s });
+                }
+                
+                orgTitle.innerText = orgTrans;
+                if (clientVal) clientVal.innerText = clientTrans;
+                subjectText.innerText = subjectTrans;
+                if (detailsContent) detailsContent.innerText = subjectTrans;
+                
+                btn.disabled = false;
+                btn.innerHTML = '<span>🌐 Show Original (FR)</span>';
+                btn.setAttribute('data-translated', 'true');
+                orgTitle.classList.add('translated-text-highlight');
+                subjectText.classList.add('translated-text-highlight');
+            }
         }
     </script>
 </body>
