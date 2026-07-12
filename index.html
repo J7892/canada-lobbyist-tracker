@@ -224,7 +224,7 @@
         /* Province Switcher Cards */
         .province-switcher {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             gap: 1rem;
         }
 
@@ -1072,6 +1072,20 @@
                     <a href="saskatchewan/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
                 </div>
             </div>
+
+            <!-- Manitoba Switcher -->
+            <div class="switcher-card" data-prov="MB" onclick="filterByProvince('MB')">
+                <div class="switcher-card-header">
+                    <span class="switcher-title">Manitoba</span>
+                    <span class="switcher-badge">MB</span>
+                </div>
+                <div class="switcher-count" id="count-mb">-</div>
+                <div class="switcher-updated" id="updated-mb">Last update: -</div>
+                <div class="switcher-meta">
+                    <span>Registry database</span>
+                    <a href="manitoba/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
+                </div>
+            </div>
         </section>
 
         <!-- Stats Bar -->
@@ -1123,11 +1137,12 @@
                 <div class="filter-group">
                     <label class="filter-label" for="province-select">Province Jurisdiction</label>
                     <select id="province-select" class="select-filter" onchange="syncProvinceFilter(this.value)">
-                        <option value="ALL">All Provinces (ON, BC, AB, SK)</option>
+                        <option value="ALL">All Provinces (ON, BC, AB, SK, MB)</option>
                         <option value="ON">Ontario (ON)</option>
                         <option value="BC">British Columbia (BC)</option>
                         <option value="AB">Alberta (AB)</option>
                         <option value="SK">Saskatchewan (SK)</option>
+                        <option value="MB">Manitoba (MB)</option>
                     </select>
                 </div>
 
@@ -1269,10 +1284,11 @@
                     ON: 'ontario/ontario_lobbyists_historical.csv',
                     BC: 'bc/bc_lobbyists_historical.csv',
                     AB: 'alberta/alberta_lobbyists_historical.csv',
-                    SK: 'saskatchewan/saskatchewan_lobbyists_historical.csv'
+                    SK: 'saskatchewan/saskatchewan_lobbyists_historical.csv',
+                    MB: 'manitoba/manitoba_lobbyists_historical.csv'
                 };
 
-                statusText.innerText = 'Fetching Ontario, B.C., Alberta, and Saskatchewan databases in parallel...';
+                statusText.innerText = 'Fetching Ontario, B.C., Alberta, Saskatchewan, and Manitoba databases in parallel...';
                 
                 // Fetch datasets in parallel
                 const fetchPromises = Object.entries(urls).map(async ([prov, url]) => {
@@ -1413,18 +1429,21 @@
             const countBc = arrays[1].length;
             const countAb = arrays[2].length;
             const countSk = arrays[3] ? arrays[3].length : 0;
+            const countMb = arrays[4] ? arrays[4].length : 0;
 
             document.getElementById('count-all').innerText = countAll.toLocaleString();
             document.getElementById('count-on').innerText = countOn.toLocaleString();
             document.getElementById('count-bc').innerText = countBc.toLocaleString();
             document.getElementById('count-ab').innerText = countAb.toLocaleString();
             document.getElementById('count-sk').innerText = countSk.toLocaleString();
+            document.getElementById('count-mb').innerText = countMb.toLocaleString();
 
             document.getElementById('updated-all').innerText = 'Last update: ' + getLatestFilingDate(masterData);
             document.getElementById('updated-on').innerText = 'Last update: ' + getLatestFilingDate(arrays[0]);
             document.getElementById('updated-bc').innerText = 'Last update: ' + getLatestFilingDate(arrays[1]);
             document.getElementById('updated-ab').innerText = 'Last update: ' + getLatestFilingDate(arrays[2]);
             document.getElementById('updated-sk').innerText = 'Last update: ' + getLatestFilingDate(arrays[3] || []);
+            document.getElementById('updated-mb').innerText = 'Last update: ' + getLatestFilingDate(arrays[4] || []);
         }
 
         // Triggered by clicking switcher cards
