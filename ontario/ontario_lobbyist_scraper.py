@@ -202,12 +202,12 @@ def execute_daily_scrape():
         
         try:
             print(f"Navigating to live search page: {BASE_URL}")
-            page.goto(BASE_URL, wait_until="networkidle")
+            page.goto(BASE_URL, wait_until="load", timeout=60000)
             
             print("Clicking search to populate results...")
             page.click("#BodyContent_ucQuickSearch_btnSearch", no_wait_after=True)
             page.wait_for_url("**/SearchResults.aspx")
-            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("load")
             time.sleep(3)
             
             while True:
@@ -284,7 +284,7 @@ def execute_daily_scrape():
                         
                         try:
                             page.click(row_selector, no_wait_after=True)
-                            page.locator("#BodyContent_ucRegistrationSubmit_btnBackToResultsTop").wait_for(timeout=15000)
+                            page.locator("#BodyContent_ucRegistrationSubmit_btnBackToResultsTop").wait_for(timeout=30000)
                             
                             html_content = page.content()
                             detail_data = parse_detail_html(html_content)
@@ -293,18 +293,115 @@ def execute_daily_scrape():
                             print(f"      * Could not download details for {reg_token}: {str(click_err)}")
                             
                         # Go back to search results grid
-                        try:
-                            page.click("#BodyContent_ucRegistrationSubmit_btnBackToResultsTop", no_wait_after=True)
-                            page.locator("tr[id*=GridRegistrationList]").first.wait_for(timeout=15000)
-                            time.sleep(2)
-                        except Exception as back_err:
-                            print(f"      * Error returning to search results: {str(back_err)}")
-                            # Recover page session if needed
-                            page.goto(BASE_URL, wait_until="networkidle")
-                            page.click("#BodyContent_ucQuickSearch_btnSearch", no_wait_after=True)
-                            page.wait_for_url("**/SearchResults.aspx")
-                            page.wait_for_load_state("networkidle")
-                            time.sleep(3)
+                        if detail_success:
+                            try:
+                                page.click("#BodyContent_ucRegistrationSubmit_btnBackToResultsTop", no_wait_after=True)
+                                page.locator("tr[id*=GridRegistrationList]").first.wait_for(timeout=30000)
+                                time.sleep(2)
+                                
+                                # Restore page number if it was greater than 1, as returning resets grid to page 1
+                                if page_number > 1:
+                                    current_active = 1
+                                    try:
+                                        current_active = int(page.locator("a.rgCurrentPage").text_content().strip())
+                                    except:
+                                        pass
+                                    while current_active < page_number:
+                                        next_btn = page.locator("input.rgPageNext").first
+                                        if next_btn.count() > 0:
+                                            next_btn.click(no_wait_after=True)
+                                            shifted_temp = False
+                                            for _ in range(15):
+                                                time.sleep(0.4)
+                                                try:
+                                                    new_active = int(page.locator("a.rgCurrentPage").text_content().strip())
+                                                    if new_active > current_active:
+                                                        current_active = new_active
+                                                        shifted_temp = True
+                                                        break
+                                                except:
+                                                    pass
+                                            if not shifted_temp:
+                                                print(f"      * Could not shift pager while restoring page {page_number}")
+                                                break
+                                        else:
+                                            break
+                                    time.sleep(1)
+                            except Exception as back_err:
+                                print(f"      * Error returning to search results: {str(back_err)}")
+                                # Recover page session if needed
+                                page.goto(BASE_URL, wait_until="load", timeout=60000)
+                                page.click("#BodyContent_ucQuickSearch_btnSearch", no_wait_after=True)
+                                page.wait_for_url("**/SearchResults.aspx")
+                                page.wait_for_load_state("load")
+                                time.sleep(3)
+                                
+                                # Restore page number in recovery block
+                                if page_number > 1:
+                                    current_active = 1
+                                    try:
+                                        current_active = int(page.locator("a.rgCurrentPage").text_content().strip())
+                                    except:
+                                        pass
+                                    while current_active < page_number:
+                                        next_btn = page.locator("input.rgPageNext").first
+                                        if next_btn.count() > 0:
+                                            next_btn.click(no_wait_after=True)
+                                            shifted_temp = False
+                                            for _ in range(15):
+                                                time.sleep(0.4)
+                                                try:
+                                                    new_active = int(page.locator("a.rgCurrentPage").text_content().strip())
+                                                    if new_active > current_active:
+                                                        current_active = new_active
+                                                        shifted_temp = True
+                                                        break
+                                                except:
+                                                    pass
+                                            if not shifted_temp:
+                                                break
+                                        else:
+                                            break
+                                    time.sleep(1)
+                        else:
+                            # If detail page failed to load, recover session to be safe
+                            try:
+                                print("      * Recovering search session after detail page failure...")
+                                page.goto(BASE_URL, wait_until="load", timeout=60000)
+                                page.click("#BodyContent_ucQuickSearch_btnSearch", no_wait_after=True)
+                                page.wait_for_url("**/SearchResults.aspx")
+                                page.wait_for_load_state("load")
+                                time.sleep(3)
+                                
+                                # Restore page number
+                                if page_number > 1:
+                                    current_active = 1
+                                    try:
+                                        current_active = int(page.locator("a.rgCurrentPage").text_content().strip())
+                                    except:
+                                        pass
+                                    while current_active < page_number:
+                                        next_btn = page.locator("input.rgPageNext").first
+                                        if next_btn.count() > 0:
+                                            next_btn.click(no_wait_after=True)
+                                            shifted_temp = False
+                                            for _ in range(15):
+                                                time.sleep(0.4)
+                                                try:
+                                                    new_active = int(page.locator("a.rgCurrentPage").text_content().strip())
+                                                    if new_active > current_active:
+                                                        current_active = new_active
+                                                        shifted_temp = True
+                                                        break
+                                                except:
+                                                    pass
+                                            if not shifted_temp:
+                                                break
+                                        else:
+                                            break
+                                    time.sleep(1)
+                            except Exception as rec_err:
+                                print(f"      * Critical: Failed to recover search session: {str(rec_err)}")
                             
                         if detail_success:
                             record = [
@@ -343,10 +440,12 @@ def execute_daily_scrape():
                         time.sleep(0.5)
                         try:
                             new_num = page.locator("a.rgCurrentPage").text_content().strip()
-                            if new_num != current_num:
+                            print(f"[PAGINATION DEBUG] Loop check: current={current_num}, new={new_num}")
+                            if new_num and new_num.isdigit() and new_num != current_num:
                                 shifted = True
                                 break
-                        except Exception:
+                        except Exception as e:
+                            print(f"[PAGINATION DEBUG] Loop exception: {str(e)}")
                             pass
                             
                     if shifted:

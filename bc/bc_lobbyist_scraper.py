@@ -182,7 +182,7 @@ def parse_detail_html(html_content, reg_id):
         form_text = " ".join(form_text.split())
         
     # Structure details search text block
-    full_text = f"Registration - {reg_type} {organization} / {filer} Registration Information Organization name: {organization} Senior Officer Name: {filer} Registration status: {status} Registration number: {reg_num} Subject Matter of the Lobbying Activities Specific Topics of Lobbying Communications: {'; '.join(subjects)} BC Ministries/Provincial Entities: {', '.join(entities)} Lobbyists Details Lobbyists Employed: {', '.join(lobbyists)}"
+    full_text = f"Registration - {reg_type} {organization} / {filer} Registration Information ID: {reg_id} Organization name: {organization} Senior Officer Name: {filer} Registration status: {status} Registration number: {reg_num} Subject Matter of the Lobbying Activities Specific Topics of Lobbying Communications: {'; '.join(subjects)} BC Ministries/Provincial Entities: {', '.join(entities)} Lobbyists Details Lobbyists Employed: {', '.join(lobbyists)}"
     if form_text:
         full_text += f" | {form_text}"
         

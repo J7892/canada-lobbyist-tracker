@@ -3,3 +3,5 @@ playwright
 pypdf
 beautifulsoup4
 lxml
+requests
+
