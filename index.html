@@ -41,6 +41,8 @@
             --prov-mb-bg: #ecfeff;
             --prov-qc: #8b5cf6;
             --prov-qc-bg: #f5f3ff;
+            --prov-nb: #16a34a;
+            --prov-nb-bg: #f0fdf4;
             
             --success: #10b981;
             --success-bg: #ecfdf5;
@@ -93,6 +95,8 @@
             --prov-mb-bg: #083344;
             --prov-qc: #a78bfa;
             --prov-qc-bg: #2e1065;
+            --prov-nb: #22c55e;
+            --prov-nb-bg: #14532d;
             
             --success: #34d399;
             --success-bg: #064e3b;
@@ -299,6 +303,7 @@
         .switcher-card[data-prov="MB"]::after { background-color: var(--prov-mb); }
         .switcher-card[data-prov="ON"]::after { background-color: var(--prov-on); }
         .switcher-card[data-prov="QC"]::after { background-color: var(--prov-qc); }
+        .switcher-card[data-prov="NB"]::after { background-color: var(--prov-nb); }
 
         .switcher-card-header {
             display: flex;
@@ -327,6 +332,7 @@
         .switcher-card[data-prov="MB"] .switcher-badge { background-color: var(--prov-mb-bg); color: var(--prov-mb); }
         .switcher-card[data-prov="ON"] .switcher-badge { background-color: var(--prov-on-bg); color: var(--prov-on); }
         .switcher-card[data-prov="QC"] .switcher-badge { background-color: var(--prov-qc-bg); color: var(--prov-qc); }
+        .switcher-card[data-prov="NB"] .switcher-badge { background-color: var(--prov-nb-bg); color: var(--prov-nb); }
 
         .switcher-count {
             font-size: 1.75rem;
@@ -649,6 +655,7 @@
         .card-province-badge[data-prov="MB"] { background-color: var(--prov-mb-bg); color: var(--prov-mb); border: 1px solid var(--prov-mb); }
         .card-province-badge[data-prov="ON"] { background-color: var(--prov-on-bg); color: var(--prov-on); border: 1px solid var(--prov-on); }
         .card-province-badge[data-prov="QC"] { background-color: var(--prov-qc-bg); color: var(--prov-qc); border: 1px solid var(--prov-qc); }
+        .card-province-badge[data-prov="NB"] { background-color: var(--prov-nb-bg); color: var(--prov-nb); border: 1px solid var(--prov-nb); }
 
         .card-status-badge {
             font-size: 0.75rem;
@@ -1132,6 +1139,20 @@
                     <a href="quebec/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
                 </div>
             </div>
+
+            <!-- New Brunswick Switcher -->
+            <div class="switcher-card" data-prov="NB" onclick="filterByProvince('NB')">
+                <div class="switcher-card-header">
+                    <span class="switcher-title">New Brunswick</span>
+                    <span class="switcher-badge">NB</span>
+                </div>
+                <div class="switcher-count" id="count-nb">-</div>
+                <div class="switcher-updated" id="updated-nb">Last update: -</div>
+                <div class="switcher-meta">
+                    <span>Registry database</span>
+                    <a href="new_brunswick/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
+                </div>
+            </div>
         </section>
 
         <!-- Stats Bar -->
@@ -1183,13 +1204,14 @@
                 <div class="filter-group">
                     <label class="filter-label" for="province-select">Province Jurisdiction</label>
                     <select id="province-select" class="select-filter" onchange="syncProvinceFilter(this.value)">
-                        <option value="ALL">All Provinces (BC, AB, SK, MB, ON, QC)</option>
+                        <option value="ALL">All Provinces (BC, AB, SK, MB, ON, QC, NB)</option>
                         <option value="BC">British Columbia (BC)</option>
                         <option value="AB">Alberta (AB)</option>
                         <option value="SK">Saskatchewan (SK)</option>
                         <option value="MB">Manitoba (MB)</option>
                         <option value="ON">Ontario (ON)</option>
                         <option value="QC">Quebec (QC)</option>
+                        <option value="NB">New Brunswick (NB)</option>
                     </select>
                 </div>
 
@@ -1333,10 +1355,11 @@
                     SK: 'saskatchewan/saskatchewan_lobbyists_historical.csv',
                     MB: 'manitoba/manitoba_lobbyists_historical.csv',
                     ON: 'ontario/ontario_lobbyists_historical.csv',
-                    QC: 'quebec/quebec_lobbyists_historical.csv'
+                    QC: 'quebec/quebec_lobbyists_historical.csv',
+                    NB: 'new_brunswick/new_brunswick_lobbyists_historical.csv'
                 };
 
-                statusText.innerText = 'Fetching B.C., Alberta, Saskatchewan, Manitoba, Ontario, and Quebec databases in parallel...';
+                statusText.innerText = 'Fetching B.C., Alberta, Saskatchewan, Manitoba, Ontario, Quebec, and New Brunswick databases in parallel...';
                 
                 // Fetch datasets in parallel
                 const fetchPromises = Object.entries(urls).map(async ([prov, url]) => {
@@ -1479,6 +1502,7 @@
             const countMb = arrays[3] ? arrays[3].length : 0;
             const countOn = arrays[4] ? arrays[4].length : 0;
             const countQc = arrays[5] ? arrays[5].length : 0;
+            const countNb = arrays[6] ? arrays[6].length : 0;
 
             document.getElementById('count-all').innerText = countAll.toLocaleString();
             document.getElementById('count-bc').innerText = countBc.toLocaleString();
@@ -1487,6 +1511,7 @@
             document.getElementById('count-mb').innerText = countMb.toLocaleString();
             document.getElementById('count-on').innerText = countOn.toLocaleString();
             document.getElementById('count-qc').innerText = countQc.toLocaleString();
+            document.getElementById('count-nb').innerText = countNb.toLocaleString();
 
             document.getElementById('updated-all').innerText = 'Last update: ' + getLatestFilingDate(masterData);
             document.getElementById('updated-bc').innerText = 'Last update: ' + getLatestFilingDate(arrays[0]);
@@ -1495,6 +1520,7 @@
             document.getElementById('updated-mb').innerText = 'Last update: ' + getLatestFilingDate(arrays[3] || []);
             document.getElementById('updated-on').innerText = 'Last update: ' + getLatestFilingDate(arrays[4] || []);
             document.getElementById('updated-qc').innerText = 'Last update: ' + getLatestFilingDate(arrays[5] || []);
+            document.getElementById('updated-nb').innerText = 'Last update: ' + getLatestFilingDate(arrays[6] || []);
         }
 
         // Triggered by clicking switcher cards
