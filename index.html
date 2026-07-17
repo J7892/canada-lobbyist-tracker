@@ -43,6 +43,8 @@
             --prov-qc-bg: #f5f3ff;
             --prov-nb: #16a34a;
             --prov-nb-bg: #f0fdf4;
+            --prov-pe: #f43f5e;
+            --prov-pe-bg: #fff1f2;
             
             --success: #10b981;
             --success-bg: #ecfdf5;
@@ -97,6 +99,8 @@
             --prov-qc-bg: #2e1065;
             --prov-nb: #22c55e;
             --prov-nb-bg: #14532d;
+            --prov-pe: #fb7185;
+            --prov-pe-bg: #881337;
             
             --success: #34d399;
             --success-bg: #064e3b;
@@ -304,6 +308,7 @@
         .switcher-card[data-prov="ON"]::after { background-color: var(--prov-on); }
         .switcher-card[data-prov="QC"]::after { background-color: var(--prov-qc); }
         .switcher-card[data-prov="NB"]::after { background-color: var(--prov-nb); }
+        .switcher-card[data-prov="PE"]::after { background-color: var(--prov-pe); }
 
         .switcher-card-header {
             display: flex;
@@ -333,6 +338,7 @@
         .switcher-card[data-prov="ON"] .switcher-badge { background-color: var(--prov-on-bg); color: var(--prov-on); }
         .switcher-card[data-prov="QC"] .switcher-badge { background-color: var(--prov-qc-bg); color: var(--prov-qc); }
         .switcher-card[data-prov="NB"] .switcher-badge { background-color: var(--prov-nb-bg); color: var(--prov-nb); }
+        .switcher-card[data-prov="PE"] .switcher-badge { background-color: var(--prov-pe-bg); color: var(--prov-pe); }
 
         .switcher-count {
             font-size: 1.75rem;
@@ -656,6 +662,7 @@
         .card-province-badge[data-prov="ON"] { background-color: var(--prov-on-bg); color: var(--prov-on); border: 1px solid var(--prov-on); }
         .card-province-badge[data-prov="QC"] { background-color: var(--prov-qc-bg); color: var(--prov-qc); border: 1px solid var(--prov-qc); }
         .card-province-badge[data-prov="NB"] { background-color: var(--prov-nb-bg); color: var(--prov-nb); border: 1px solid var(--prov-nb); }
+        .card-province-badge[data-prov="PE"] { background-color: var(--prov-pe-bg); color: var(--prov-pe); border: 1px solid var(--prov-pe); }
 
         .card-status-badge {
             font-size: 0.75rem;
@@ -1232,6 +1239,20 @@
                     <a href="new_brunswick/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
                 </div>
             </div>
+
+            <!-- Prince Edward Island Switcher -->
+            <div class="switcher-card" data-prov="PE" onclick="filterByProvince('PE')">
+                <div class="switcher-card-header">
+                    <span class="switcher-title">PEI</span>
+                    <span class="switcher-badge">PE</span>
+                </div>
+                <div class="switcher-count" id="count-pe">-</div>
+                <div class="switcher-updated" id="updated-pe">Last update: -</div>
+                <div class="switcher-meta">
+                    <span>Registry database</span>
+                    <a href="prince_edward_island/index.html" class="switcher-link" onclick="event.stopPropagation();">Dig in →</a>
+                </div>
+            </div>
         </section>
 
         <!-- Stats Bar -->
@@ -1283,7 +1304,7 @@
                 <div class="filter-group">
                     <label class="filter-label" for="province-select">Province Jurisdiction</label>
                     <select id="province-select" class="select-filter" onchange="syncProvinceFilter(this.value)">
-                        <option value="ALL">All Provinces (BC, AB, SK, MB, ON, QC, NB)</option>
+                        <option value="ALL">All Provinces (BC, AB, SK, MB, ON, QC, NB, PE)</option>
                         <option value="BC">British Columbia (BC)</option>
                         <option value="AB">Alberta (AB)</option>
                         <option value="SK">Saskatchewan (SK)</option>
@@ -1291,6 +1312,7 @@
                         <option value="ON">Ontario (ON)</option>
                         <option value="QC">Quebec (QC)</option>
                         <option value="NB">New Brunswick (NB)</option>
+                        <option value="PE">Prince Edward Island (PE)</option>
                     </select>
                 </div>
 
@@ -1430,7 +1452,7 @@
             const statusText = document.getElementById('loading-status');
             
             // Set initial loading indicator inside switcher counts
-            const provs = ['all', 'bc', 'ab', 'sk', 'mb', 'on', 'qc', 'nb'];
+            const provs = ['all', 'bc', 'ab', 'sk', 'mb', 'on', 'qc', 'nb', 'pe'];
             provs.forEach(p => {
                 const el = document.getElementById(`count-${p}`);
                 if (el) el.innerHTML = '<span class="loading-dots">...</span>';
@@ -1478,7 +1500,7 @@
                     masterData = mapped;
                     
                     // Group by province to set the counts on the switcher cards
-                    const provinceCounts = { BC: 0, AB: 0, SK: 0, MB: 0, ON: 0, QC: 0, NB: 0 };
+                    const provinceCounts = { BC: 0, AB: 0, SK: 0, MB: 0, ON: 0, QC: 0, NB: 0, PE: 0 };
                     masterData.forEach(row => {
                         if (provinceCounts[row.province] !== undefined) {
                             provinceCounts[row.province]++;
@@ -1590,7 +1612,8 @@
                 MB: 'manitoba/manitoba_lobbyists_historical.csv',
                 ON: 'ontario/ontario_lobbyists_historical.csv',
                 QC: 'quebec/quebec_lobbyists_historical.csv',
-                NB: 'new_brunswick/new_brunswick_lobbyists_historical.csv'
+                NB: 'new_brunswick/new_brunswick_lobbyists_historical.csv',
+                PE: 'prince_edward_island/prince_edward_island_lobbyists_historical.csv'
             };
 
             const totalProvinces = Object.keys(urls).length;
@@ -1603,7 +1626,7 @@
             });
 
             // Set switcher counts to loading indicators
-            const provs = ['all', 'bc', 'ab', 'sk', 'mb', 'on', 'qc', 'nb'];
+            const provs = ['all', 'bc', 'ab', 'sk', 'mb', 'on', 'qc', 'nb', 'pe'];
             provs.forEach(p => {
                 const el = document.getElementById(`count-${p}`);
                 if (el) el.innerHTML = '<span class="loading-dots">...</span>';

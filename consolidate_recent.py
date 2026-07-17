@@ -45,7 +45,8 @@ def main():
         'MB': 'manitoba/manitoba_lobbyists_historical.csv',
         'ON': 'ontario/ontario_lobbyists_historical.csv',
         'QC': 'quebec/quebec_lobbyists_historical.csv',
-        'NB': 'new_brunswick/new_brunswick_lobbyists_historical.csv'
+        'NB': 'new_brunswick/new_brunswick_lobbyists_historical.csv',
+        'PE': 'prince_edward_island/prince_edward_island_lobbyists_historical.csv'
     }
     
     # Target date: last 60 days for any filings, last 180 days for active ones

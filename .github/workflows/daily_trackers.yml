@@ -93,6 +93,15 @@ jobs:
       run: |
         python new_brunswick/new_brunswick_lobbyist_scraper.py
 
+    - name: Run PEI Scraper
+      continue-on-error: true
+      env:
+        SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+        SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+      run: |
+        python prince_edward_island/pei_lobbyist_scraper.py
+
     - name: Consolidate Recent and Active Filings
       run: |
         python consolidate_recent.py
@@ -112,7 +121,8 @@ jobs:
         git add manitoba/manitoba_lobbyists_historical.csv
         git add quebec/quebec_lobbyists_historical.csv
         git add new_brunswick/new_brunswick_lobbyists_historical.csv
+        git add prince_edward_island/prince_edward_island_lobbyists_historical.csv
         git add recent_lobbyists.csv
         
-        git commit -m "Automated Daily Sync: Updated Alberta, BC, Ontario, Saskatchewan, Manitoba, Quebec, New Brunswick databases and consolidated recent feed" || true
+        git commit -m "Automated Daily Sync: Updated Alberta, BC, Ontario, Saskatchewan, Manitoba, Quebec, New Brunswick, PEI databases and consolidated recent feed" || true
         git push origin main || true
