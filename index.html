@@ -998,6 +998,74 @@
             0% { background-color: rgba(139, 92, 246, 0.3); }
             100% { background-color: rgba(139, 92, 246, 0.08); }
         }
+
+        /* Sync Banner & Loading Dots */
+        .sync-banner {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            box-shadow: var(--shadow-sm);
+            transition: opacity 0.5s ease, margin 0.5s ease, height 0.5s ease, padding 0.5s ease, border 0.5s ease;
+            overflow: hidden;
+        }
+
+        .sync-banner-content {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .sync-spinner-icon {
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .sync-progress-track {
+            width: 120px;
+            height: 6px;
+            background-color: var(--bg-base);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+        }
+
+        .sync-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary), #818cf8);
+            transition: width 0.3s ease;
+        }
+
+        .sync-banner.completed {
+            border-color: rgba(52, 211, 153, 0.3);
+            background-color: rgba(52, 211, 153, 0.05);
+        }
+
+        .loading-dots {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            animation: pulse-dots 1.5s infinite ease-in-out;
+            display: inline-block;
+        }
+
+        @keyframes pulse-dots {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -1041,6 +1109,17 @@
     <!-- Main Container -->
     <main class="app-main">
         
+        <!-- Sync Banner -->
+        <div id="sync-banner" class="sync-banner">
+            <div class="sync-banner-content">
+                <span class="sync-spinner-icon"></span>
+                <span id="sync-banner-text">Connecting to provincial registries...</span>
+            </div>
+            <div class="sync-progress-track">
+                <div id="sync-banner-progress" class="sync-progress-fill"></div>
+            </div>
+        </div>
+
         <!-- Province switcher widgets -->
         <section class="province-switcher">
             <!-- All switcher -->
@@ -1236,12 +1315,18 @@
                 </div>
 
                 <!-- Direct Actions -->
-                <div class="sidebar-actions">
+                <div class="sidebar-actions" style="display: flex; flex-direction: column; gap: 0.5rem;">
                     <button class="btn btn-primary" onclick="downloadConsolidatedCSV()">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:1.1rem;height:1.1rem;">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                         </svg>
                         Export Filtered CSV
+                    </button>
+                    <button id="load-archive-btn" class="btn btn-secondary" onclick="loadFullArchives()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 0.25rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:1.1rem;height:1.1rem;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                        </svg>
+                        Load Full Archives (Slow)
                     </button>
                 </div>
             </aside>
@@ -1344,108 +1429,284 @@
             const progressFill = document.getElementById('progress-fill');
             const statusText = document.getElementById('loading-status');
             
-            try {
-                // Set initial progress
-                progressFill.style.width = '10%';
-                
-                // Paths to datasets
-                const urls = {
-                    BC: 'bc/bc_lobbyists_historical.csv',
-                    AB: 'alberta/alberta_lobbyists_historical.csv',
-                    SK: 'saskatchewan/saskatchewan_lobbyists_historical.csv',
-                    MB: 'manitoba/manitoba_lobbyists_historical.csv',
-                    ON: 'ontario/ontario_lobbyists_historical.csv',
-                    QC: 'quebec/quebec_lobbyists_historical.csv',
-                    NB: 'new_brunswick/new_brunswick_lobbyists_historical.csv'
-                };
+            // Set initial loading indicator inside switcher counts
+            const provs = ['all', 'bc', 'ab', 'sk', 'mb', 'on', 'qc', 'nb'];
+            provs.forEach(p => {
+                const el = document.getElementById(`count-${p}`);
+                if (el) el.innerHTML = '<span class="loading-dots">...</span>';
+            });
 
-                statusText.innerText = 'Fetching B.C., Alberta, Saskatchewan, Manitoba, Ontario, Quebec, and New Brunswick databases in parallel...';
-                
-                // Fetch datasets in parallel
-                const fetchPromises = Object.entries(urls).map(async ([prov, url]) => {
-                    try {
-                        const res = await fetch(url);
-                        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-                        const text = await res.text();
-                        return { province: prov, text: text, success: true };
-                    } catch (e) {
-                        console.error(`Error loading database for ${prov}:`, e);
-                        return { province: prov, text: '', success: false, error: e };
+            // Setup Search listeners
+            setupSearchListeners();
+
+            // Load the consolidated recent feed by default
+            statusText.innerText = 'Fetching consolidated active registries...';
+            
+            Papa.parse('recent_lobbyists.csv', {
+                download: true,
+                worker: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    if (results.errors && results.errors.length > 0 && (!results.data || results.data.length === 0)) {
+                        console.error('Error loading recent_lobbyists.csv:', results.errors[0].message);
+                        loadFullArchives();
+                        return;
                     }
-                });
 
-                progressFill.style.width = '40%';
-                const results = await Promise.all(fetchPromises);
-                progressFill.style.width = '70%';
+                    // Uniform mapping of the parsed data
+                    const mapped = results.data.map(row => {
+                        return {
+                            province: (row['PROVINCE'] || '').trim(),
+                            filingDate: (row['FILING DATE'] || '').trim(),
+                            terminationDate: (row['TERMINATION DATE'] || '').trim(),
+                            organization: (row['ORGANIZATION'] || '').trim(),
+                            clientName: (row['CLIENT NAME'] || '').trim(),
+                            designatedFiler: (row['DESIGNATED FILER'] || '').trim(),
+                            deptLobbied: (row['GOVERNMENT DEPARTMENT LOBBIED'] || '').trim(),
+                            entityLobbied: (row['PRESCRIBED PROVINCIAL ENTITY LOBBIED'] || '').trim(),
+                            subjectMatter: (row['SUBJECT MATTER OF LOBBYING'] || '').trim(),
+                            registrationNumber: (row['REGISTRATION NUMBER'] || '').trim(),
+                            lobbyistType: (row['TYPE OF LOBBYIST'] || '').trim(),
+                            lobbyists: (row['LOBBYISTS'] || '').trim(),
+                            registrationType: (row['TYPE OF REGISTRATION'] || '').trim(),
+                            registrationStatus: (row['REGISTRATION STATUS'] || '').trim(),
+                            extractedPdfDetails: (row['EXTRACTED_PDF_DETAILS'] || '').trim()
+                        };
+                    });
 
-                statusText.innerText = 'Parsing database csv grids...';
-                let parsePromises = results.map(result => {
-                    return new Promise((resolve) => {
-                        if (!result.success || !result.text) {
-                            resolve([]);
-                            return;
+                    masterData = mapped;
+                    
+                    // Group by province to set the counts on the switcher cards
+                    const provinceCounts = { BC: 0, AB: 0, SK: 0, MB: 0, ON: 0, QC: 0, NB: 0 };
+                    masterData.forEach(row => {
+                        if (provinceCounts[row.province] !== undefined) {
+                            provinceCounts[row.province]++;
                         }
+                    });
 
-                        Papa.parse(result.text, {
-                            header: true,
-                            skipEmptyLines: true,
-                            complete: function(parsed) {
-                                // Add province tag to every row
-                                const mapped = parsed.data.map(row => {
-                                    return {
-                                        province: result.province,
-                                        filingDate: (row['FILING DATE'] || '').trim(),
-                                        terminationDate: (row['TERMINATION DATE'] || '').trim(),
-                                        organization: (row['ORGANIZATION'] || '').trim(),
-                                        clientName: (row['CLIENT NAME'] || '').trim(),
-                                        designatedFiler: (row['DESIGNATED FILER'] || '').trim(),
-                                        deptLobbied: (row['GOVERNMENT DEPARTMENT LOBBIED'] || '').trim(),
-                                        entityLobbied: (row['PRESCRIBED PROVINCIAL ENTITY LOBBIED'] || '').trim(),
-                                        subjectMatter: (row['SUBJECT MATTER OF LOBBYING'] || '').trim(),
-                                        registrationNumber: (row['REGISTRATION NUMBER'] || '').trim(),
-                                        lobbyistType: (row['TYPE OF LOBBYIST'] || row['TYPE OF LOBBIIST'] || '').trim(),
-                                        lobbyists: (row['LOBBYISTS'] || '').trim(),
-                                        registrationType: (row['TYPE OF REGISTRATION'] || '').trim(),
-                                        registrationStatus: (row['REGISTRATION STATUS'] || '').trim(),
-                                        extractedPdfDetails: (row['EXTRACTED_PDF_DETAILS'] || '').trim()
-                                    };
-                                });
-                                resolve(mapped);
+                    // Update counts in DOM
+                    Object.entries(provinceCounts).forEach(([prov, count]) => {
+                        const countEl = document.getElementById(`count-${prov.toLowerCase()}`);
+                        if (countEl) countEl.innerText = count.toLocaleString();
+                        const updatedEl = document.getElementById(`updated-${prov.toLowerCase()}`);
+                        if (updatedEl) {
+                            const provRows = masterData.filter(r => r.province === prov);
+                            updatedEl.innerText = 'Last update: ' + getLatestFilingDate(provRows);
+                        }
+                    });
+
+                    // Update unified dashboard counters
+                    document.getElementById('count-all').innerText = masterData.length.toLocaleString();
+                    document.getElementById('updated-all').innerText = 'Last update: ' + getLatestFilingDate(masterData);
+
+                    // Re-apply filters and re-render active list
+                    applyFilters();
+
+                    // Dismiss loading overlay
+                    dismissLoadingScreen();
+                    
+                    // Update sync banner to show completed status
+                    updateSyncBannerCompleted();
+                },
+                error: function(err) {
+                    console.error('Error fetching recent_lobbyists.csv:', err);
+                    loadFullArchives();
+                }
+            });
+        }
+
+        function dismissLoadingScreen() {
+            setTimeout(() => {
+                const screen = document.getElementById('loading-screen');
+                if (screen) {
+                    screen.style.opacity = '0';
+                    setTimeout(() => {
+                        screen.style.display = 'none';
+                    }, 500);
+                }
+            }, 200);
+        }
+
+        function updateSyncBannerCompleted() {
+            const banner = document.getElementById('sync-banner');
+            const text = document.getElementById('sync-banner-text');
+            const progress = document.getElementById('sync-banner-progress');
+            const spinner = banner.querySelector('.sync-spinner-icon');
+            
+            if (progress) progress.style.width = `100%`;
+            if (text) text.innerHTML = `✅ Consolidated recent feed loaded successfully.`;
+            if (banner) banner.classList.add('completed');
+            if (spinner) spinner.style.display = 'none';
+            
+            setTimeout(() => {
+                if (banner) {
+                    banner.style.opacity = '0';
+                    banner.style.height = '0';
+                    banner.style.padding = '0';
+                    banner.style.marginTop = '0';
+                    banner.style.marginBottom = '0';
+                    banner.style.border = 'none';
+                    setTimeout(() => {
+                        banner.style.display = 'none';
+                    }, 500);
+                }
+            }, 3000);
+        }
+
+        async function loadFullArchives() {
+            const btn = document.getElementById('load-archive-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span>⏳ Loading Full Archives...</span>';
+            }
+            
+            // Show and reset the sync banner
+            const banner = document.getElementById('sync-banner');
+            if (banner) {
+                banner.style.display = 'flex';
+                banner.style.opacity = '1';
+                banner.style.height = 'auto';
+                banner.style.padding = '0.75rem 1.25rem';
+                banner.style.marginTop = '0';
+                banner.style.marginBottom = '1.25rem';
+                banner.style.border = '1px solid var(--border-color)';
+                banner.classList.remove('completed');
+                
+                const text = document.getElementById('sync-banner-text');
+                if (text) text.innerText = 'Connecting to full archives...';
+                
+                const progress = document.getElementById('sync-banner-progress');
+                if (progress) progress.style.width = '0%';
+                
+                const spinner = banner.querySelector('.sync-spinner-icon');
+                if (spinner) spinner.style.display = 'inline-block';
+            }
+
+            const urls = {
+                BC: 'bc/bc_lobbyists_historical.csv',
+                AB: 'alberta/alberta_lobbyists_historical.csv',
+                SK: 'saskatchewan/saskatchewan_lobbyists_historical.csv',
+                MB: 'manitoba/manitoba_lobbyists_historical.csv',
+                ON: 'ontario/ontario_lobbyists_historical.csv',
+                QC: 'quebec/quebec_lobbyists_historical.csv',
+                NB: 'new_brunswick/new_brunswick_lobbyists_historical.csv'
+            };
+
+            const totalProvinces = Object.keys(urls).length;
+            let loadedProvincesCount = 0;
+            
+            masterData = [];
+            const parsedDatasets = {};
+            Object.keys(urls).forEach(prov => {
+                parsedDatasets[prov] = [];
+            });
+
+            // Set switcher counts to loading indicators
+            const provs = ['all', 'bc', 'ab', 'sk', 'mb', 'on', 'qc', 'nb'];
+            provs.forEach(p => {
+                const el = document.getElementById(`count-${p}`);
+                if (el) el.innerHTML = '<span class="loading-dots">...</span>';
+            });
+
+            const promises = Object.entries(urls).map(([prov, url]) => {
+                return new Promise((resolve) => {
+                    Papa.parse(url, {
+                        download: true,
+                        worker: true,
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            if (results.errors && results.errors.length > 0 && (!results.data || results.data.length === 0)) {
+                                console.error(`Error loading archive for ${prov}:`, results.errors[0].message);
+                                handleArchiveResult(prov, [], resolve);
+                                return;
                             }
-                        });
+
+                            const mapped = results.data.map(row => {
+                                return {
+                                    province: prov,
+                                    filingDate: (row['FILING DATE'] || '').trim(),
+                                    terminationDate: (row['TERMINATION DATE'] || '').trim(),
+                                    organization: (row['ORGANIZATION'] || '').trim(),
+                                    clientName: (row['CLIENT NAME'] || '').trim(),
+                                    designatedFiler: (row['DESIGNATED FILER'] || '').trim(),
+                                    deptLobbied: (row['GOVERNMENT DEPARTMENT LOBBIED'] || '').trim(),
+                                    entityLobbied: (row['PRESCRIBED PROVINCIAL ENTITY LOBBIED'] || '').trim(),
+                                    subjectMatter: (row['SUBJECT MATTER OF LOBBYING'] || '').trim(),
+                                    registrationNumber: (row['REGISTRATION NUMBER'] || '').trim(),
+                                    lobbyistType: (row['TYPE OF LOBBYIST'] || row['TYPE OF LOBBIIST'] || '').trim(),
+                                    lobbyists: (row['LOBBYISTS'] || '').trim(),
+                                    registrationType: (row['TYPE OF REGISTRATION'] || '').trim(),
+                                    registrationStatus: (row['REGISTRATION STATUS'] || '').trim(),
+                                    extractedPdfDetails: (row['EXTRACTED_PDF_DETAILS'] || '').trim()
+                                };
+                            });
+
+                            handleArchiveResult(prov, mapped, resolve);
+                        },
+                        error: function(err) {
+                            console.error(`Error loading archive for ${prov}:`, err);
+                            handleArchiveResult(prov, [], resolve);
+                        }
                     });
                 });
+            });
 
-                const parsedDataArrays = await Promise.all(parsePromises);
-                progressFill.style.width = '90%';
+            function handleArchiveResult(prov, rows, resolve) {
+                parsedDatasets[prov] = rows;
+                loadedProvincesCount++;
 
-                // Consolidate into single array
-                masterData = parsedDataArrays.flat();
-                
-                // Close loading screen
-                progressFill.style.width = '100%';
-                statusText.innerText = 'Initializing portal...';
-                
-                setTimeout(() => {
-                    document.getElementById('loading-screen').style.opacity = '0';
-                    setTimeout(() => {
-                        document.getElementById('loading-screen').style.display = 'none';
-                    }, 500);
-                }, 400);
+                masterData = Object.values(parsedDatasets).flat();
 
-                // Initial processing
-                updateProvinceCounts(parsedDataArrays);
-                
-                // Setup Search listeners
-                setupSearchListeners();
-                
-                // Execute initial filter
+                // Update counts
+                const countEl = document.getElementById(`count-${prov.toLowerCase()}`);
+                if (countEl) countEl.innerText = rows.length.toLocaleString();
+                const updatedEl = document.getElementById(`updated-${prov.toLowerCase()}`);
+                if (updatedEl) updatedEl.innerText = 'Last update: ' + getLatestFilingDate(rows);
+
+                document.getElementById('count-all').innerText = masterData.length.toLocaleString();
+                document.getElementById('updated-all').innerText = 'Last update: ' + getLatestFilingDate(masterData);
+
                 applyFilters();
+                updateSyncBanner(loadedProvincesCount, totalProvinces);
+                resolve();
+            }
 
-            } catch (err) {
-                console.error("Critical failure during initialization:", err);
-                statusText.innerHTML = `<span style="color:#ef4444;font-weight:700;">Initialization Failed:</span><br>${err.message}<br><br>Please make sure you are running a local web server (e.g. <code>python3 -m http.server 8080</code>) and that the csv files exist.`;
-                progressFill.style.backgroundColor = '#ef4444';
+            function updateSyncBanner(loaded, total) {
+                const banner = document.getElementById('sync-banner');
+                const text = document.getElementById('sync-banner-text');
+                const progress = document.getElementById('sync-banner-progress');
+                const spinner = banner.querySelector('.sync-spinner-icon');
+                
+                const percent = Math.round((loaded / total) * 100);
+                if (progress) progress.style.width = `${percent}%`;
+                
+                if (loaded < total) {
+                    if (text) text.innerText = `Synchronizing full archives (${loaded}/${total} loaded)...`;
+                } else {
+                    if (text) text.innerHTML = `✅ All ${total} full archives loaded successfully.`;
+                    if (banner) banner.classList.add('completed');
+                    if (spinner) spinner.style.display = 'none';
+                    if (btn) {
+                        btn.innerHTML = '<span>✅ Full Archives Loaded</span>';
+                        btn.disabled = true;
+                    }
+                    
+                    setTimeout(() => {
+                        if (banner) {
+                            banner.style.opacity = '0';
+                            banner.style.height = '0';
+                            banner.style.padding = '0';
+                            banner.style.marginTop = '0';
+                            banner.style.marginBottom = '0';
+                            banner.style.border = 'none';
+                            setTimeout(() => {
+                                banner.style.display = 'none';
+                            }, 500);
+                        }
+                    }, 3000);
+                }
             }
         }
 
@@ -1493,35 +1754,7 @@
             return `${y}-${m}-${d}`;
         }
 
-        // Calculate and display numbers inside the switcher widgets
-        function updateProvinceCounts(arrays) {
-            const countAll = masterData.length;
-            const countBc = arrays[0].length;
-            const countAb = arrays[1].length;
-            const countSk = arrays[2] ? arrays[2].length : 0;
-            const countMb = arrays[3] ? arrays[3].length : 0;
-            const countOn = arrays[4] ? arrays[4].length : 0;
-            const countQc = arrays[5] ? arrays[5].length : 0;
-            const countNb = arrays[6] ? arrays[6].length : 0;
-
-            document.getElementById('count-all').innerText = countAll.toLocaleString();
-            document.getElementById('count-bc').innerText = countBc.toLocaleString();
-            document.getElementById('count-ab').innerText = countAb.toLocaleString();
-            document.getElementById('count-sk').innerText = countSk.toLocaleString();
-            document.getElementById('count-mb').innerText = countMb.toLocaleString();
-            document.getElementById('count-on').innerText = countOn.toLocaleString();
-            document.getElementById('count-qc').innerText = countQc.toLocaleString();
-            document.getElementById('count-nb').innerText = countNb.toLocaleString();
-
-            document.getElementById('updated-all').innerText = 'Last update: ' + getLatestFilingDate(masterData);
-            document.getElementById('updated-bc').innerText = 'Last update: ' + getLatestFilingDate(arrays[0]);
-            document.getElementById('updated-ab').innerText = 'Last update: ' + getLatestFilingDate(arrays[1]);
-            document.getElementById('updated-sk').innerText = 'Last update: ' + getLatestFilingDate(arrays[2] || []);
-            document.getElementById('updated-mb').innerText = 'Last update: ' + getLatestFilingDate(arrays[3] || []);
-            document.getElementById('updated-on').innerText = 'Last update: ' + getLatestFilingDate(arrays[4] || []);
-            document.getElementById('updated-qc').innerText = 'Last update: ' + getLatestFilingDate(arrays[5] || []);
-            document.getElementById('updated-nb').innerText = 'Last update: ' + getLatestFilingDate(arrays[6] || []);
-        }
+        // Counts and dates are now dynamically updated as data loads in initApp()
 
         // Triggered by clicking switcher cards
         function filterByProvince(prov) {

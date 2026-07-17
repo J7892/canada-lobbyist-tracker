@@ -93,6 +93,10 @@ jobs:
       run: |
         python new_brunswick/new_brunswick_lobbyist_scraper.py
 
+    - name: Consolidate Recent and Active Filings
+      run: |
+        python consolidate_recent.py
+
     - name: Commit and Push Updated Databases
       run: |
         git config --global user.name "GitHub Actions Bot"
@@ -108,6 +112,7 @@ jobs:
         git add manitoba/manitoba_lobbyists_historical.csv
         git add quebec/quebec_lobbyists_historical.csv
         git add new_brunswick/new_brunswick_lobbyists_historical.csv
+        git add recent_lobbyists.csv
         
-        git commit -m "Automated Daily Sync: Updated Alberta, BC, Ontario, Saskatchewan, Manitoba, Quebec, and New Brunswick databases" || true
+        git commit -m "Automated Daily Sync: Updated Alberta, BC, Ontario, Saskatchewan, Manitoba, Quebec, New Brunswick databases and consolidated recent feed" || true
         git push origin main || true
