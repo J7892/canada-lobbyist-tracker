@@ -1444,7 +1444,7 @@
             
             Papa.parse('recent_lobbyists.csv', {
                 download: true,
-                worker: true,
+                worker: false,
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
@@ -1613,7 +1613,7 @@
                 return new Promise((resolve) => {
                     Papa.parse(url, {
                         download: true,
-                        worker: true,
+                        worker: false,
                         header: true,
                         skipEmptyLines: true,
                         complete: function(results) {
